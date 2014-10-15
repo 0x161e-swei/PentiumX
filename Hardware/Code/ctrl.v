@@ -62,14 +62,14 @@ module 		ctrl(
 				WB_Lui	  = 5'b00101, EX_beq = 5'b00110, EX_bne = 5'b00111, EX_jr 	= 5'b01000, EX_JAL  = 5'b01001,
 				Ex_J 	  = 5'b01010, MEM_RD = 5'b01011, MEM_WD = 5'b01100, WB_R 	= 5'b01101, WB_I 	= 5'b01110,
 				WB_LW 	  = 5'b01111, Error  = 5'b11111,
-				MEM_RD_LH = 5'b10000, LH_ALU = 5'b10001, 
+				MEM_RD_LH = 5'b10000, MEM_RD_LHU = 5'b10110, LH_ALU = 5'b10001, 
 				MEM_RD_SH = 5'b10010, SH_ALU = 5'b10011, 
 				WB_LW_SH  = 5'b10100, 
 				EX_Mem_SH = 5'b10101;
 
 	localparam 	AND = 4'b0000, OR 	= 4'b0001, ADD 	= 4'b0010, SUB 	= 4'b0110, NOR 	= 4'b0100, SLT 	  = 4'b0111, XOR  	= 4'b0011, 
 				SRL = 4'b0101, SLL 	= 4'b1000, ADDU = 4'b1001, SUBU = 4'b1010, SLTU = 4'b1011, ALU_LH = 4'b1100, ALU_SH = 4'b1101,
-				SRA = 4'b1110;
+				SRA = 4'b1110, ALU_LHU = 4'b1111;
 
 	`define CPU_ctrl_signals {PCWrite, PCWriteCond, IorD, MemRead, MemWrite, IRWrite, MemtoReg, PCSource, ALUSrcB, ALUSrcA[0], RegWrite, RegDst, CPU_MIO}
 							//   1         1         1       1         1        1        2         2         2        1           1        2         1
@@ -106,7 +106,7 @@ module 		ctrl(
 
 			ID: begin
 				case (Inst[31:26])
-					6'b000000:begin  //R type
+					6'b000000: begin  //R type
 
 						`CPU_ctrl_signals 	<= 17'h00010;
 						state 				<= EX_R;
@@ -139,100 +139,107 @@ module 		ctrl(
 
 					end
 
-					6'b100011:begin 												//Lw
+					6'b100011: begin 												//Lw
 						`CPU_ctrl_signals	<= 17'h00050;
 						ALU_operation  		<= ADD;
 						state 				<= EX_Mem;
 					end
 
-					6'b101011:begin 												//Sw
+					6'b101011: begin 												//Sw
 						`CPU_ctrl_signals	<= 17'h00050;
 						ALU_operation		<= ADD;
 						state 				<= EX_Mem;
 					end
 					
 					////////////////////////////////////////////////////////////////////////
-					6'b100001:begin 												//Lh
+					6'b100001: begin 												//Lh
 						`CPU_ctrl_signals	<= 17'h00050;
 						ALU_operation		<= ADD;
 						state  				<= EX_Mem;
 					end
+
+					6'b100101: begin 												//Lhu
+						`CPU_ctrl_signals	<= 17'h00050;
+						ALU_operation		<= ADD;
+						state  				<= EX_Mem;
+					end
+
 					
-					6'b101001:begin 												//Sh
+					6'b101001: begin 												//Sh
 						`CPU_ctrl_signals 	<= 17'h00050;
 						ALU_operation 		<= ADD;
 						state 				<= EX_Mem;
 					end
 					
-					6'b000010:begin 												//Jump
+					6'b000010: begin 												//Jump
 						`CPU_ctrl_signals 	<= 17'h10160;
 						state  				<= Ex_J;
 					end
 
-					6'b000100:begin 												//Beq
+					6'b000100: begin 												//Beq
 						`CPU_ctrl_signals 	<= 17'h08090; 
 						Beq 				<= 1;
 						ALU_operation 		<= SUB; 
 						state 				<= EX_beq; 
 					end
 
-					6'b000101:begin 												//Bne
+					6'b000101: begin 												//Bne
 						`CPU_ctrl_signals 	<= 17'h08090; 
 						Beq 				<= 0;
 						ALU_operation 		<= SUB; 
 						state 		 		<= EX_bne; 
 					end
 
-					6'b000011:begin 												//Jal
+					6'b000011: begin 												//Jal
 						`CPU_ctrl_signals 	<= 17'h1076c;
 						state 				<= EX_JAL;
 					end
 
-					6'b001000:begin 												//Addi
+					6'b001000: begin 												//Addi
 						`CPU_ctrl_signals 	<= 17'h00050;
 						ALU_operation 		<= ADD;
 						state 				<= EX_I;
 					end
 					
-					6'b001100:begin 												//Andi  
+					6'b001100: begin 												//Andi  
 						`CPU_ctrl_signals	<= 17'h00050;
 						ALU_operation 		<= AND;
 						state 				<= EX_I;
 					end
 					
-					6'b001101:begin 												//Ori  
+					6'b001101: begin 												//Ori  
 						`CPU_ctrl_signals 	<= 17'h00050;
 						ALU_operation 		<= OR;
 						state 				<= EX_I;
 					end
 					
-					6'b001110:begin 												//Xori 
+					6'b001110: begin 												//Xori 
 						`CPU_ctrl_signals 	<= 17'h00050;
 						ALU_operation  		<= XOR;
 						state 				<= EX_I;
 					end
 
-					6'b001010:begin 												//Slti
-						`CPU_ctrl_signals 	<= 	17'h00050;
+					6'b001010: begin 												//Slti
+						`CPU_ctrl_signals 	<= 17'h00050;
 						ALU_operation  		<= SLT;
 						state 				<= EX_I;
 					end
 					
-					6'b001011:begin 												//Sltiu
+					6'b001011: begin 												//Sltiu
 						`CPU_ctrl_signals 	<= 17'h00050;
 						Signext				<= 1;
 						ALU_operation 		<= SLTU;
 						state 				<= EX_I;
 					end
 					
-					6'b001001:begin 												//Addiu
+					6'b001001: begin 												//Addiu
 						`CPU_ctrl_signals 	<= 17'h00050;
 						Signext				<= 1;
 						ALU_operation 		<= ADDU;
 						state 				<= EX_I;
 					end
 
-					6'b001111:begin 												//Lui
+					6'b001111: begin 												//Lui
 						`CPU_ctrl_signals	<= 17'h00468;
 						state 				<= WB_Lui;
 					end
@@ -265,17 +272,21 @@ module 		ctrl(
 					`CPU_ctrl_signals	<= 17'h06051; 
 					state 				<= MEM_RD_LH; 
 				end
+				else if(Inst[31:26] == 6'b100101)begin 								// Lhu
+					`CPU_ctrl_signals	<= 17'h06051; 
+					state 				<= MEM_RD_LHU; 
+				end
 				else if(Inst[31:26] == 6'b101001)begin 								// Sh
 					`CPU_ctrl_signals 	<= 17'h06051; 
 					state 				<= MEM_RD_SH; 
-				end				
+				end
 				else if(Inst[31:26] == 6'b101011)begin
 					`CPU_ctrl_signals 	<=17'h05051; 
 					state 				<= MEM_WD; 
 					end
 			end
 			
-			EX_Mem_SH:begin				
+			EX_Mem_SH: begin				
 				if(Inst[31:26] == 6'b101001)begin
 				`CPU_ctrl_signals	<= 17'h05051; 
 				data2Mem 			<= 1;
@@ -283,37 +294,37 @@ module 		ctrl(
 				end
 			end
 
-			Ex_J:begin
+			Ex_J: begin
 				`CPU_ctrl_signals 	<= 17'h12821;
 				ALU_operation 		<= ADD; 
 				state  				<= IF; 
 			end
 
-			EX_bne:begin
+			EX_bne: begin
 				`CPU_ctrl_signals 	<= 17'h12821;
 				ALU_operation 		<= ADD; 
 				state 				<= IF; 
 			end
 
-			EX_beq:begin
+			EX_beq: begin
 				`CPU_ctrl_signals 	<= 17'h12821;
 				ALU_operation 		<= ADD; 
 				state 				<= IF; 
 			end
 
-			EX_jr:begin
+			EX_jr: begin
 				`CPU_ctrl_signals 	<= 17'h12821;
 				ALU_operation 		<= ADD; 
 				state 				<= IF; 
 			end
 
-			EX_JAL:begin
+			EX_JAL: begin
 				`CPU_ctrl_signals 	<= 17'h12821;
 				ALU_operation 		<= ADD; 
 				state 				<= IF; 
 			end
 
-			MEM_RD:begin
+			MEM_RD: begin
 				if(MIO_ready)begin
 					`CPU_ctrl_signals<= 17'h00208; 
 					state 			<= WB_LW; 
@@ -337,14 +348,28 @@ module 		ctrl(
 					`CPU_ctrl_signals<=17'h06050; 
 				end
 			end
+
+			MEM_RD_LHU: begin
+				if ( MIO_ready ) begin
+					`CPU_ctrl_signals<=17'h00040; 
+					ALUSrcA[1] 		<= 1; 											// Operator select data2cpu
+					ALU_operation	<= ALU_LHU; 
+					state 			<= LH_ALU; 
+				end
+				else begin
+					state 			<= MEM_RD_LHU;
+					`CPU_ctrl_signals<=17'h06050; 
+				end
+			end
+
 			
-			LH_ALU:begin
+			LH_ALU: begin
 				`CPU_ctrl_signals	<= 17'h00008; 									// MemToReg Select alu_out
 				ALUSrcA[1] 			<= 0;
 				state <= WB_LW; 
 			end
 
-			MEM_RD_SH:begin
+			MEM_RD_SH: begin
 				if(MIO_ready)begin
 					`CPU_ctrl_signals<= 17'h00000; 
 					ALUSrcA[1] 		<= 1; 											// Operator: data2cpu & rt
@@ -357,7 +382,7 @@ module 		ctrl(
 				end
 			end
 			
-			SH_ALU:begin
+			SH_ALU: begin
 				`CPU_ctrl_signals	<= 17'h00050; 			// To calculate ram address 
 				ALUSrcA[1] 			<= 0; 
 				ALU_operation 		<= ADD;
@@ -365,7 +390,7 @@ module 		ctrl(
 			end
 
 
-			MEM_WD:begin
+			MEM_WD: begin
 				if(MIO_ready)begin
 					`CPU_ctrl_signals<= 17'h12821;
 					data2Mem 		<= 0;
@@ -378,27 +403,27 @@ module 		ctrl(
 				end
 			end
 
-			WB_LW:begin
+			WB_LW: begin
 				`CPU_ctrl_signals	<= 17'h12821;
 				ALU_operation		<= ADD;
 				state 				<= IF;
 			end
 
 
-			WB_R:begin
+			WB_R: begin
 				`CPU_ctrl_signals 	<= 17'h12821;
 				ALU_operation		<= ADD;
 				state 				<= IF;
 			end
 
-			WB_I:begin
+			WB_I: begin
 				`CPU_ctrl_signals	<= 17'h12821;
 				ALU_operation 		<= ADD; 
 				state 				<= IF; 
 			end
 
 
-			WB_Lui:begin
+			WB_Lui: begin
 				`CPU_ctrl_signals 	<= 17'h12821;
 				ALU_operation 		<= ADD; 
 				state 				<= IF; 

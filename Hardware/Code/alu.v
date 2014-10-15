@@ -36,12 +36,14 @@ module alu(
 	output wire 		overflow;
 
   	wire 		[31: 0]	res_and, res_or, res_add, res_sub, res_nor, res_slt,
-             			res_xor, res_srl, res_sll, res_addu, res_subu, res_sltu, res_lh, res_sh, res_sra;
+             			res_xor, res_srl, res_sll, res_addu, res_subu, res_sltu, res_lh, res_sh, res_sra, res_lhu;
              			
 	reg 		[31: 0] mask4 = 32'h0000_ffff;
   	wire 		[31: 0] mask;
+	wire     	[31: 0] res_tmp;
 
   	assign mask =  B[1] ? 32'hffff_0000 : 32'h0000_ffff;
+	assign res_tmp = A & mask;
 
   	always @(posedge ALU_operation[0]) mask4 = mask;
 
@@ -64,7 +66,8 @@ module alu(
   	assign res_subu =  $unsigned(A) - $unsigned(B);
   	assign res_sltu = ($unsigned(A) < $unsigned(B)) ? one : zero_0;
   	
-  	assign res_lh 	= B[1] ? (A & mask)>>16 : A & mask;
+  	assign res_lh 	= B[1] ? {{16{res_tmp[31]}}, res_tmp[31:16]} : {{16{res_tmp[15]}}, res_tmp[15:0]};
+	assign res_lhu	= B[1] ? {16'h0, res_tmp[31:16]} : {16'h0, res_tmp[15:0]};
   	assign res_sh 	= mask4[0] ? (A&(~mask4) | {16'h0, B[15:0]}) : (A&(~mask4) | {B[15:0], 16'h0});
   
   	always @(*)
@@ -84,6 +87,7 @@ module alu(
 		  	4'b1100: res = res_lh;
 		  	4'b1101: res = res_sh;
 			4'b1110: res = res_sra;
+			4'b1111: res = res_lhu;
 		  	default: res = res_add;
 		endcase
 		
