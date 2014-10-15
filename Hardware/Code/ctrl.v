@@ -398,7 +398,7 @@ module 		ctrl(
 					state 			<= IF; 
 				end
 				else begin
-					state <=MEM_WD;
+					state 			<= MEM_WD;
 					`CPU_ctrl_signals<= 17'h05050;
 				end
 			end
