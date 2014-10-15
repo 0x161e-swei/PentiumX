@@ -53,7 +53,7 @@ module alu(
   	assign res_xor 	= A ^ B;
   	assign res_srl 	= B >> shamt;
   	assign res_sll 	= B << shamt;
-	assign res_sra  = $signed(B) >> shamt; 
+	assign res_sra  = $signed(B) >>> shamt; 
 
   	assign res_add 	= $signed(A) + $signed(B);
   	assign res_sub 	= $signed(A) - $signed(B);
