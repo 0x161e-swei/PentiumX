@@ -268,8 +268,7 @@ module 		ctrl(
 				else if(Inst[31:26] == 6'b101001)begin 								// Sh
 					`CPU_ctrl_signals 	<= 17'h06051; 
 					state 				<= MEM_RD_SH; 
-				end
-				
+				end				
 				else if(Inst[31:26] == 6'b101011)begin
 					`CPU_ctrl_signals 	<=17'h05051; 
 					state 				<= MEM_WD; 
@@ -334,7 +333,7 @@ module 		ctrl(
 					state 			<= LH_ALU; 
 				end
 				else begin
-					state 			<= MEM_RD;
+					state 			<= MEM_RD_LH;
 					`CPU_ctrl_signals<=17'h06050; 
 				end
 			end
@@ -353,7 +352,7 @@ module 		ctrl(
 					state 			<= SH_ALU; 
 				end
 				else begin
-					state 			<= MEM_RD;
+					state 			<= MEM_RD_SH;
 					`CPU_ctrl_signals<= 17'h06050; 
 				end
 			end
