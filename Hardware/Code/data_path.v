@@ -36,6 +36,7 @@ module data_path(
                 PCWrite,
 				PCWriteCond,
                 Beq,
+				Signext,
                 ALU_operation,
 				
                 PC_Current, 
@@ -49,7 +50,7 @@ module data_path(
             	);
 
     input wire 			clk, reset;
-    input wire 	 		MIO_ready, IorD, RegWrite, IRWrite, PCWrite, PCWriteCond, Beq, data2Mem;
+    input wire 	 		MIO_ready, IorD, RegWrite, IRWrite, PCWrite, PCWriteCond, Beq, data2Mem, Signext;
 
     input wire  [ 1: 0] RegDst, ALUSrcA, ALUSrcB, PCSource, MemtoReg;
     input wire  [ 3: 0] ALU_operation;
@@ -70,6 +71,7 @@ module data_path(
 	wire 		[31: 0] Alu_A,Alu_B,res;
 	wire 		[31: 0] w_reg_data, rdata_A, rdata_B;
 	wire 		[15: 0] imm;
+	wire        [31: 0] imm_ext;
 	wire 		[ 4: 0] shamt;
 	wire 		[ 4: 0] reg_Rs_addr_A,reg_Rt_addr_B,reg_rd_addr,reg_Wt_addr;
 	reg  		[31: 0] dataToCpu;
@@ -94,6 +96,9 @@ module data_path(
 			end
 		end
  
+ 
+  //+++++++++++++++++++++++++++++++++++++++++++有符号和无符号扩展
+	single_signext signext(Signext, imm, imm_ext);
  
   //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 	alu 			D1(
@@ -161,7 +166,7 @@ module data_path(
   mux4to1_32 mux_Alu_B(
          			.a					(rdata_B), 						//reg out B
          			.b					(32'h00000004), 				//4 for PC+4
-         			.c					({{16{imm[15]}},imm}), 			//imm
+         			.c					(imm_ext), 			//imm
          			.d					({{14{imm[15]}},imm,2'b00}),	// offset
          			.sel 				(ALUSrcB),
          			.o					(Alu_B)

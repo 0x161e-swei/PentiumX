@@ -41,6 +41,7 @@ module 		ctrl(
 				RegDst,
 				CPU_MIO,
 				Beq,
+				Signext,
 				ALU_operation,
 				state_out
 				);
@@ -50,7 +51,7 @@ module 		ctrl(
 	input wire 	[31: 0] Inst;		
 	input wire 			MIO_ready, zero, overflow;
 	
-	output reg 			PCWrite, PCWriteCond, IorD, MemRead, MemWrite, IRWrite, data2Mem, RegWrite, CPU_MIO, Beq;
+	output reg 			PCWrite, PCWriteCond, IorD, MemRead, MemWrite, IRWrite, data2Mem, RegWrite, CPU_MIO, Beq, Signext;
 	output reg 	[ 1: 0]	RegDst, MemtoReg, PCSource, ALUSrcB, ALUSrcA;
 	output reg 	[ 3: 0]	ALU_operation;
 	output wire [ 4: 0]	state_out;
@@ -67,7 +68,8 @@ module 		ctrl(
 				EX_Mem_SH = 5'b10101;
 
 	localparam 	AND = 4'b0000, OR 	= 4'b0001, ADD 	= 4'b0010, SUB 	= 4'b0110, NOR 	= 4'b0100, SLT 	  = 4'b0111, XOR  	= 4'b0011, 
-				SRL = 4'b0101, SLL 	= 4'b1000, ADDU = 4'b1001, SUBU = 4'b1010, SLTU = 4'b1011, ALU_LH = 4'b1100, ALU_SH = 4'b1101;
+				SRL = 4'b0101, SLL 	= 4'b1000, ADDU = 4'b1001, SUBU = 4'b1010, SLTU = 4'b1011, ALU_LH = 4'b1100, ALU_SH = 4'b1101,
+				SRA = 4'b1110;
 
 	`define CPU_ctrl_signals {PCWrite, PCWriteCond, IorD, MemRead, MemWrite, IRWrite, MemtoReg, PCSource, ALUSrcB, ALUSrcA[0], RegWrite, RegDst, CPU_MIO}
 							//   1         1         1       1         1        1        2         2         2        1           1        2         1
@@ -78,12 +80,14 @@ module 		ctrl(
 		ALUSrcA[1] 			= 0;
 		data2Mem 			= 0;
 		ALU_operation  		= 3'b010;
+		Signext				= 0;
 	end
 
 	always @ (posedge clk or posedge reset)
 		
 		if (reset == 1) begin
 			`CPU_ctrl_signals 				<= 17'h12821;
+			Signext							<= 0;
 			state 							<= IF;
 		end	
 		else begin	
@@ -119,7 +123,8 @@ module 		ctrl(
 							6'b000000: ALU_operation <= SLL;
 							6'b100001: ALU_operation <= ADDU;
 							6'b100011: ALU_operation <= SUBU;
-							6'b101011: ALU_operation <= SLTU;							
+							6'b101011: ALU_operation <= SLTU;
+							6'b000011: ALU_operation <= SRA;
 							6'b001000: begin 				
 								`CPU_ctrl_signals 	 <= 17'h10010;
 								ALU_operation 		 <= ADD; 
@@ -215,12 +220,14 @@ module 		ctrl(
 					
 					6'b001011:begin 												//Sltiu
 						`CPU_ctrl_signals 	<= 17'h00050;
+						Signext				<= 1;
 						ALU_operation 		<= SLTU;
 						state 				<= EX_I;
 					end
 					
 					6'b001001:begin 												//Addiu
 						`CPU_ctrl_signals 	<= 17'h00050;
+						Signext				<= 1;
 						ALU_operation 		<= ADDU;
 						state 				<= EX_I;
 					end
@@ -245,6 +252,7 @@ module 		ctrl(
 
 			EX_I:begin
 				`CPU_ctrl_signals 	<= 17'h00058;
+				Signext				<= 0;
 				state 				<= WB_I;
 			end
 

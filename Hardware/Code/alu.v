@@ -36,7 +36,7 @@ module alu(
 	output wire overflow;
 
   	wire 		[31: 0]	res_and, res_or, res_add, res_sub, res_nor, res_slt,
-             			res_xor, res_srl, res_sll, res_addu, res_subu, res_sltu, res_lh, res_sh;
+             			res_xor, res_srl, res_sll, res_addu, res_subu, res_sltu, res_lh, res_sh, res_sra;
              			
 	reg 		[31: 0] mask4 = 32'h0000_ffff;
   	wire 		[31: 0] mask;
@@ -53,10 +53,12 @@ module alu(
   	assign res_xor 	= A ^ B;
   	assign res_srl 	= B >> shamt;
   	assign res_sll 	= B << shamt;
+	assign res_sra  = $signed(B) >> shamt; 
 
   	assign res_add 	= $signed(A) + $signed(B);
   	assign res_sub 	= $signed(A) - $signed(B);
   	assign res_slt 	= ($signed(A) < $signed(B)) ? one : zero_0;
+	
   	  	
   	assign res_addu =  $unsigned(A) + $unsigned(B);
   	assign res_subu =  $unsigned(A) - $unsigned(B);
@@ -81,6 +83,7 @@ module alu(
 		  	4'b1011: res = res_sltu;
 		  	4'b1100: res = res_lh;
 		  	4'b1101: res = res_sh;
+			4'b1110: res = res_sra;
 		  	default: res = res_add;
 		endcase
 		
