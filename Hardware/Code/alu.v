@@ -32,8 +32,8 @@ module alu(
 	input wire 	[ 3: 0] ALU_operation;
 	input wire  [ 4: 0] shamt;
 	output reg  [31: 0] res;
-	output wire zero;
-	output wire overflow;
+	output wire 		zero;
+	output wire 		overflow;
 
   	wire 		[31: 0]	res_and, res_or, res_add, res_sub, res_nor, res_slt,
              			res_xor, res_srl, res_sll, res_addu, res_subu, res_sltu, res_lh, res_sh, res_sra;
