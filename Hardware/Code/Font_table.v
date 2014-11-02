@@ -8,7 +8,7 @@ module Font_table (
     output reg  [ 7: 0] D_out;      // Font dot
     
     (* bram_map="yes" *)
-    reg         [ 7: 0] Rom [   0:1023];
+    reg         [15: 0] Rom [   0:4095];
     initial begin
         $readmemb("../Coe/Font.coe", Rom);
     end

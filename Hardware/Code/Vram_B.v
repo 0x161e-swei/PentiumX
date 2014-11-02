@@ -28,12 +28,12 @@ module 	Vram_B(
 
 	input 				clk;
 	input 				W_En;
-	input 		[12: 0] Addr;
-	input		[10: 0] D_In;
-	output reg	[10: 0] D_Out;
+	input 		[10: 0] Addr;						// eleven bits for 1200
+	input		[31: 0] D_In;
+	output reg	[31: 0] D_Out;
 
 	(* bram_map="yes" *)
-	reg 		[10: 0] Vram_B[4799:	0];
+	reg 		[31: 0] Vram_B[1199:	0];
 
 	/*
 	initial begin
