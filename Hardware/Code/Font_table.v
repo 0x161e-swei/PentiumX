@@ -4,7 +4,7 @@ module Font_table (
 					D_out
 					);
     //input               clk;
-    input  wire [ 9: 0] Addr;       // 8*8*128=2^3*2^3*2^7
+    input  wire [11: 0] Addr;       // 8*8*128=2^3*2^3*2^7
     output reg  [ 7: 0] D_out;      // Font dot
     
     (* bram_map="yes" *)
