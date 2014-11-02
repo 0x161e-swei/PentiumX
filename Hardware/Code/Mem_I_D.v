@@ -37,7 +37,7 @@ module Mem_I_D 	(
 
 
 	initial begin
-		$readmemb("../Coe/test_system.coe",RAM);
+		$readmemb("../Coe/ChineseTest",RAM);
 	end
 
 	always @(posedge clk ) begin

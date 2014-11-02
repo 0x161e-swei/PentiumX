@@ -45,7 +45,7 @@ module VGA_IO(
 	output wire [ 1: 0] B;
 	output reg          HSYNC;
 	output reg          VSYNC;
-	output      [12: 0] vga_addr;
+	output      [10: 0] vga_addr;
 	output wire         vga_rdn;
 
 	// variable declarations
@@ -54,12 +54,12 @@ module VGA_IO(
 	wire                v_active;
 	wire        [18: 0] addr;
 
-	wire        [ 9: 0] font_addr;
-	wire        [ 7: 0] font_out;
+	wire        [11: 0] font_addr;
+	wire        [15: 0] font_out;
 
 	reg         [ 2: 0] dot_in;
-	reg         [ 7: 0] l_font_out;
-	reg         [10: 0] l_vram_out,vram_data;
+	reg         [15: 0] l_font_out;
+	reg         [31: 0] l_vram_out,vram_data;
 	reg         [18: 0] pixel_addr;
 	reg                 red, green, blue, vga_dispn;
 
@@ -77,7 +77,7 @@ module VGA_IO(
 	assign 		 		font_addr  = {vram_out[7: 0], font_row};				// Actually the font_addr shoud be {vram_out[15: 0], font_row}
 	assign 		 		vga_rdn    = ~(v_active && (addr[ 2: 0] == 3'b000)); 	//
 
-	wire 		 		Blinking   = (Cursor[12:7] == char_row) && (Cursor[ 6: 0] == char_col) &&( vga_row[ 2: 0] > 3) && (~text_Cursor_switch); //&& (vga_col[2:0]<7 )
+	wire 		 		Blinking   = (Cursor[12:7] == char_row) && (Cursor[ 6: 0] == char_col) &&( vga_row[ 3: 0] > 3) && (~text_Cursor_switch); //&& (vga_col[2:0]<7 )
 	assign 		 		R[2]       = Blinking ? red   ^ Blink : red;
 	assign 				R[1]       = Blinking ? red   ^ Blink : red;
 	assign 				R[0]       = Blinking ? red   ^ Blink : red;
@@ -129,22 +129,22 @@ module VGA_IO(
 		dot_in = 3'b0;
 	else
 		case(vga_col[ 3: 0])
-			4'b0000: dot_in = encolor(l_vram_out[18:16], l_font_out[15]);
-			4'b0001: dot_in = encolor(l_vram_out[18:16], l_font_out[14]);
-			4'b0010: dot_in = encolor(l_vram_out[18:16], l_font_out[13]);
-			4'b0011: dot_in = encolor(l_vram_out[18:16], l_font_out[12]);
-			4'b0100: dot_in = encolor(l_vram_out[18:16], l_font_out[11]);
-			4'b0101: dot_in = encolor(l_vram_out[18:16], l_font_out[10]);
-			4'b0110: dot_in = encolor(l_vram_out[18:16], l_font_out[ 9]);
-			4'b0111: dot_in = encolor(l_vram_out[18:16], l_font_out[ 8]);
-			4'b1000: dot_in = encolor(l_vram_out[18:16], l_font_out[ 7]);
-			4'b1001: dot_in = encolor(l_vram_out[18:16], l_font_out[ 6]);
-			4'b1010: dot_in = encolor(l_vram_out[18:16], l_font_out[ 5]);
-			4'b1011: dot_in = encolor(l_vram_out[18:16], l_font_out[ 4]);
-			4'b1100: dot_in = encolor(l_vram_out[18:16], l_font_out[ 3]);
-			4'b1101: dot_in = encolor(l_vram_out[18:16], l_font_out[ 2]);
-			4'b1110: dot_in = encolor(l_vram_out[18:16], l_font_out[ 1]);
-			4'b1111: dot_in = encolor(l_vram_out[18:16], l_font_out[ 0]);
+			4'b0000: dot_in = encolor(l_vram_out[10: 8], l_font_out[15]);
+			4'b0001: dot_in = encolor(l_vram_out[10: 8], l_font_out[14]);
+			4'b0010: dot_in = encolor(l_vram_out[10: 8], l_font_out[13]);
+			4'b0011: dot_in = encolor(l_vram_out[10: 8], l_font_out[12]);
+			4'b0100: dot_in = encolor(l_vram_out[10: 8], l_font_out[11]);
+			4'b0101: dot_in = encolor(l_vram_out[10: 8], l_font_out[10]);
+			4'b0110: dot_in = encolor(l_vram_out[10: 8], l_font_out[ 9]);
+			4'b0111: dot_in = encolor(l_vram_out[10: 8], l_font_out[ 8]);
+			4'b1000: dot_in = encolor(l_vram_out[10: 8], l_font_out[ 7]);
+			4'b1001: dot_in = encolor(l_vram_out[10: 8], l_font_out[ 6]);
+			4'b1010: dot_in = encolor(l_vram_out[10: 8], l_font_out[ 5]);
+			4'b1011: dot_in = encolor(l_vram_out[10: 8], l_font_out[ 4]);
+			4'b1100: dot_in = encolor(l_vram_out[10: 8], l_font_out[ 3]);
+			4'b1101: dot_in = encolor(l_vram_out[10: 8], l_font_out[ 2]);
+			4'b1110: dot_in = encolor(l_vram_out[10: 8], l_font_out[ 1]);
+			4'b1111: dot_in = encolor(l_vram_out[10: 8], l_font_out[ 0]);
 		endcase
 	end
 

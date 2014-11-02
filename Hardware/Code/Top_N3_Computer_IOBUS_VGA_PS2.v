@@ -58,8 +58,8 @@ module Top_N3_Computer_IOBUS_VGA_PS2(
 	wire        [21: 0] GPIOf0;
 	wire        [31: 0] pc, Inst, cpu_addr, Cpu_data2bus, ram_data_out, disp_num;
 	wire        [31: 0] clkdiv, Cpu_data4bus, counter_out, ram_data_in, Peripheral_in;
-	wire        [10: 0] vram_out, vram_data_in;
-	wire        [12: 0] vram_addr, vga_addr;
+	wire        [31: 0] vram_out, vram_data_in;
+	wire        [10: 0] vram_addr, vga_addr;
 	wire                MIO_ready;
 	wire                CPU_MIO, vga_rdn;
 	wire        [31: 0] key_d;

@@ -66,7 +66,7 @@ module MIO_BUS(clk,
 	output reg 			data_ram_we, GPIOfffffe00_we, GPIOffffff00_we, counter_we, ps2_rd;
 	output reg	[31: 0] Cpu_data4bus, ram_data_in, Peripheral_in;
 	output reg	[11: 0] ram_addr;
-	output reg	[10: 0] vram_data_in;
+	output reg	[31: 0] vram_data_in;
 
 
 
@@ -98,7 +98,7 @@ module MIO_BUS(clk,
 		ram_addr   					= 12'h0;
 		cpu_vram_addr 				= 13'h0;
 		ram_data_in  				= 32'h0;
-		vram_data_in 				= 11'h0;
+		vram_data_in 				= 31'h0;
 		Peripheral_in 				= 32'h0;
 		Cpu_data4bus 				= 32'h0;
 
@@ -114,7 +114,7 @@ module MIO_BUS(clk,
 				vram_write 			= mem_w;
 				vram 				= 1;
 				cpu_vram_addr 		= addr_bus[14:2];
-				vram_data_in 		= Cpu_data2bus[10:0];
+				vram_data_in 		= Cpu_data2bus[31:0];
 				Cpu_data4bus 		= vga_rdn? {21'h0, vram_out[10:0]} : 32'hx;
 			end
 
