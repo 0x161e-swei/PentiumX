@@ -40,23 +40,25 @@ module 	Vram_B(
 			   	//D_Out           
     			);
 	//cpu_read_write		
-	input wire [10:0] dat_i;
+
+	input wire [31:0] dat_i;
 	input wire [31:0] adr_i;
 	input wire we_i;
 	input wire stb_i;
-	output reg [10:0] dat_o;
+	output reg [31:0] dat_o;
 	output reg ack_o;
 	
 	//vga_read
 	input wire [10:0] vga_addr;
-	output wire [10:0] vga_dout;
+	output wire [31:0] vga_dout;
+
 
 	input 				clk;
 
 	reg [10:0] addra;
 	reg wea;
-	reg [10:0] dina;
-	reg [10:0] douta;
+	reg [31:0] dina;
+	reg [31:0] douta;
 	wire [10:0] vram_addr;
 	assign vram_addr = adr_i[14:2];
 	//input 				W_En;

@@ -133,6 +133,102 @@ module Top_N3_Computer_IOBUS_VGA_PS2(
 //----------------------------------------------------------
 
 
+//for wb input and output ---------------------------------------------------
+// Master 0 Interface
+	wire	[`dw-1:0]	m0_dat_i;
+	wire	[`dw-1:0]	m0_dat_o;
+	wire	[`aw-1:0]	m0_adr_i;
+	wire	[`sw-1:0]	m0_sel_i;
+	wire				m0_we_i;
+	wire				m0_stb_i;
+	wire				m0_ack_o;
+
+	// Master 1 Interface
+	wire	[`dw-1:0]	m1_dat_i;
+	wire	[`dw-1:0]	m1_dat_o;
+	wire	[`aw-1:0]	m1_adr_i;
+	wire	[`sw-1:0]	m1_sel_i;
+	wire				m1_we_i;
+	wire				m1_stb_i;
+	wire				m1_ack_o;
+
+
+	// Slave 0 Interface
+	wire	[`dw-1:0]	s0_dat_i;
+	wire	[`dw-1:0]	s0_dat_o;
+	wire	[`aw-1:0]	s0_adr_o;
+	wire	[`sw-1:0]	s0_sel_o;
+	wire				s0_we_o;
+	wire				s0_stb_o;
+	wire				s0_ack_i;
+
+	// Slave 1 Interface
+	wire	[`dw-1:0]	s1_dat_i;
+	wire	[`dw-1:0]	s1_dat_o;
+	wire	[`aw-1:0]	s1_adr_o;
+	wire	[`sw-1:0]	s1_sel_o;
+	wire				s1_we_o;
+	wire				s1_stb_o;
+	wire				s1_ack_i;
+
+	// Slave 2 Interface
+	wire	[`dw-1:0]	s2_dat_i;
+	wire	[`dw-1:0]	s2_dat_o;
+	wire	[`aw-1:0]	s2_adr_o;
+	wire	[`sw-1:0]	s2_sel_o;
+	wire				s2_we_o;
+	wire				s2_stb_o;
+	wire				s2_ack_i;
+
+	// Slave 3 Interface
+	wire	[`dw-1:0]	s3_dat_i;
+	wire	[`dw-1:0]	s3_dat_o;
+	wire	[`aw-1:0]	s3_adr_o;
+	wire	[`sw-1:0]	s3_sel_o;
+	wire				s3_we_o;
+	wire				s3_stb_o;
+	wire				s3_ack_i;
+
+	// Slave 4 Interface
+	wire	[`dw-1:0]	s4_dat_i;
+	wire	[`dw-1:0]	s4_dat_o;
+	wire	[`aw-1:0]	s4_adr_o;
+	wire	[`sw-1:0]	s4_sel_o;
+	wire				s4_we_o;
+	wire				s4_stb_o;
+	wire				s4_ack_i;
+
+	// Slave 5 Interface
+	wire	[`dw-1:0]	s5_dat_i;
+	wire	[`dw-1:0]	s5_dat_o;
+	wire	[`aw-1:0]	s5_adr_o;
+	wire	[`sw-1:0]	s5_sel_o;
+	wire				s5_we_o;
+	wire				s5_stb_o;
+	wire				s5_ack_i;
+
+	// Slave 6 Interface
+	wire	[`dw-1:0]	s6_dat_i;
+	wire	[`dw-1:0]	s6_dat_o;
+	wire	[`aw-1:0]	s6_adr_o;
+	wire	[`sw-1:0]	s6_sel_o;
+	wire				s6_we_o;
+	wire				s6_stb_o;
+	wire				s6_ack_i;
+
+
+	// Slave 7 Interface
+	wire	[`dw-1:0]	s7_dat_i;
+	wire	[`dw-1:0]	s7_dat_o;
+	wire	[`aw-1:0]	s7_adr_o;
+	wire	[`sw-1:0]	s7_sel_o;
+	wire				s7_we_o;
+	wire				s7_stb_o;
+	wire				s7_ack_i;
+	
+//----------------------------------------------------------
+
+
 
 	input               clk_100mhz;
     input               PS2_clk, PS2_Data;
@@ -262,7 +358,7 @@ module Top_N3_Computer_IOBUS_VGA_PS2(
 			        .D_Out              (vram_out)
 					);
 
-	//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 	//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 	wb_conbus_top UU4(
 					.clk_i(clk_100mhz), .rst_i(rst),
@@ -312,9 +408,6 @@ module Top_N3_Computer_IOBUS_VGA_PS2(
 	);
 
 	//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-
-
 
 
 	MIO_BUS       	U4(
@@ -437,7 +530,6 @@ module Top_N3_Computer_IOBUS_VGA_PS2(
 					//wb_output
 					.dat_o				(s3_dat_i), 				
 					.ack_o				(s3_ack_i),
-
 					.io_read_clk 		(io_read_clk),
 					.clk_ps2 			(clkdiv[0]),
 					.rst 				(rst),
