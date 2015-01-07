@@ -214,7 +214,7 @@ module Top_N3_Computer_IOBUS_VGA_PS2(
 	Muliti_cycle_Cpu U1(
                     .clk                (Clk_CPU),
 					.reset              (rst),
-					.MIO_ready          (MIO_ready), 		// MIO_ready
+					.MIO_ready          (m0_ack_o), 		// MIO_ready
 
 					// Internal signals:
 					.pc_out             (pc), 				// Test

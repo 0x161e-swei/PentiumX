@@ -78,14 +78,14 @@ module 	Vram_B(
 	 
 	always @(posedge clk) begin
 		if(stb_i && ack_o) begin
-				if(we_i) begin //write
-					dina <= dat_i;
-					wea <= 1;
-				end
-				else begin //read
-					wea <= 0;
-					dat_o <= douta;
-				end
+			if(we_i) begin //write
+				dina <= dat_i;
+				wea <= 1;
+			end
+			else begin //read
+				wea <= 0;
+				dat_o <= douta;
+			end
 		end
 		else begin
 			wea <= 0;
@@ -101,20 +101,20 @@ module 	Vram_B(
 
 
 	Vram_2 vram_2p(
-		//for cpu
-	  .clka(clk), // input clka
-	  .wea(wea), // input [0 : 0] wea
-	  .addra(vram_addr), // input [10 : 0] addra
-	  .dina(dina), // input [10 : 0] dina
-	  .douta(douta), // output [10 : 0] douta
-	  
-	  //for vga
-	  .clkb(clk), // input clkb
-	  .web(0), // input [0 : 0] web
-	  .addrb(vga_addr), // input [10 : 0] addrb
-	  .dinb(0), // input [10 : 0] dinb
-	  .doutb(vga_dout) // output [10 : 0] doutb
-	);
+				//for cpu
+				.clka(clk), // input clka
+				.wea(wea), // input [0 : 0] wea
+				.addra(vram_addr), // input [10 : 0] addra
+				.dina(dina), // input [10 : 0] dina
+				.douta(douta), // output [10 : 0] douta
+				
+				//for vga
+				.clkb(clk), // input clkb
+				.web(0), // input [0 : 0] web
+				.addrb(vga_addr), // input [10 : 0] addrb
+				.dinb(0), // input [10 : 0] dinb
+				.doutb(vga_dout) // output [10 : 0] doutb
+				);		
 
 
 endmodule

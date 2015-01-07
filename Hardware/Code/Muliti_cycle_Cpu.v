@@ -106,6 +106,9 @@ module Muliti_cycle_Cpu(
 
 
 	assign mem_w 	= MemWrite && ~MemRead;
+	assign stb_o 	= MemWrite | MemRead;			// Used for wishbone interface 
 	assign pc_out	= PC_Current;
+	
+
 
 endmodule
