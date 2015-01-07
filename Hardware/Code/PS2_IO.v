@@ -19,6 +19,16 @@
 //
 //////////////////////////////////////////////////////////////////////////////////
 module PS2_IO(  
+				//cpu_read_write
+				//wb_input
+				dat_i, 
+				adr_i, 
+				we_i,
+				stb_i,
+				//wb_output
+				dat_o, 				
+				ack_o,
+
                 io_read_clk,
 				clk_ps2,
 				rst,
@@ -31,17 +41,45 @@ module PS2_IO(
 				key
 				);
 
+	//cpu_read_write		
+	input wire [7:0] dat_i;
+	input wire [31:0] adr_i;
+	input wire we_i;
+	input wire stb_i;
+	output reg [7:0] dat_o;
+	output reg ack_o = 0;
+
     input               io_read_clk, clk_ps2, rst, PS2_clk, PS2_Data, ps2_rd;
 
     output              ps2_ready;
-    output      [ 7: 0] key;
+    output reg  [ 7: 0] key;
     output reg  [31: 0] key_d;
     
 
 
 
 	reg ps2_rdn;
+	
+	always @(posedge io_read_clk) ack_o <= stb_i;
+	
+	always @(posedge io_read_clk or posedge rst)
+		if ( rst ) begin
+            ps2_rdn   <= 1; 
+            key_d     <= 0; 
+        end
+		else if(stb_i && ack_o) begin
+			if(~we_i && ps2_ready) begin
+				key_d     <= {key_d[23:0], ps2_key};   // TEST
+				ps2_rdn   <= we_i | ~ps2_ready;     // cancel key_ready
+				key <= ps2_key;
+			end
+			else key <= 8'haa;
+		end
+		else begin
+			ps2_rdn  <=1;
+		end
 
+	/*
 	always @(posedge io_read_clk or posedge rst)
 		if ( rst ) begin
             ps2_rdn   <= 1; 
@@ -51,9 +89,9 @@ module PS2_IO(
 			key_d     <= {key_d[23:0], ps2_key};   // TEST
 			ps2_rdn   <= ~ps2_rd | ~ps2_ready;     // cancel key_ready
 		end
-		else ps2_rdn  <=1;
+		else ps2_rdn  <=1;*/
 
-	assign key = ( ps2_rd && ps2_ready) ? ps2_key : 8'haa;
+	//assign key = ( ps2_rd && ps2_ready) ? ps2_key : 8'haa;
 
 	wire [7:0]ps2_key;
 	wire ps2_ready;
