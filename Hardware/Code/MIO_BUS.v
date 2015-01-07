@@ -22,13 +22,13 @@
 module MIO_BUS(	
 				//cpu_read_write
 				//wb_input
-				s4_dat_i, 
-				s4_adr_i, 
-				s4_we_i,
-				s4_stb_i,
+				dat_i, 
+				adr_i, 
+				we_i,
+				stb_i,
 				//wb_output
-				s4_dat_o, 				
-				s4_ack_o,
+				dat_o, 				
+				ack_o,
 
 				clk,
 				rst,
@@ -65,12 +65,12 @@ module MIO_BUS(
 				);
 	//cpu_read_write		
 	//wb interface
-	input wire [31:0] s4_dat_i;
-	input wire [31:0] s4_adr_i;
-	input wire s4_we_i;
-	input wire s4_stb_i;
-	output reg [31:0] s4_dat_o;
-	output reg s4_ack_o = 0;
+	input wire [31:0] dat_i;
+	input wire [31:0] adr_i;
+	input wire we_i;
+	input wire stb_i;
+	output reg [31:0] dat_o;
+	output ack_o;
 
 	//input  wire 		clk, rst, ps2_ready, mem_w, vga_rdn;
 	input  wire 		clk, rst;
@@ -112,29 +112,20 @@ module MIO_BUS(
 	//assign vram_we 	 	= vga_rdn && vram_write; //CPU_wait &
 	//assign vram_addr 	= ~vga_rdn? vga_addr : cpu_vram_addr;
 
-
+	assign ack_o = stb_i;
 	always @(posedge clk) begin
-		if(s4_stb_i && s4_ack_o==0 && s4_adr_i[31:12]==20'hfffff) begin
-				if(s4_we_i) begin //write
-					//addra <= s0_adr_in;
-					Cpu_data2bus <= s4_dat_i;
+		if(stb_i && ack_o) begin
+				if(we_i) begin //write
+					Cpu_data2bus <= dat_i;
 					wea <= 1;
-					s4_ack_o <= 1;
 				end
 				else begin //read
-					//addra <= s0_adr_in;
 					wea <= 0;
-					s4_dat_o <= Cpu_data4bus;
-					s4_ack_o <= 1;
+					dat_o <= Cpu_data4bus;
 				end
-		end
-		else if(s4_stb_i==0 && s4_ack_o) begin
-			s4_ack_o <= 0;
-			wea <= 0;
 		end
 		else begin
 			wea <= 0;
-			s4_ack_o <= 0;
 		end
 	end
 

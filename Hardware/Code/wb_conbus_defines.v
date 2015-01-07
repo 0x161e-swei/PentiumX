@@ -40,3 +40,11 @@
 
 `timescale 1ns / 10ps
 
+`define			dw	 32						// Data bus Width
+`define			aw	 32						// Address bus Width
+`define			sw   `dw / 8				// Number of Select Lines
+`define			mbusw  `aw + `sw + `dw + 2 	// address width + byte select width + dat width + we + stb , input from master interface
+`define			sbusw	 1					// ack, input from slave interface, simplified
+`define			mselectw  2					// number of masters
+`define			sselectw  8					// number of slavers
+
