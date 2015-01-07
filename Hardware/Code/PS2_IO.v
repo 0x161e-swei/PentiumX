@@ -60,7 +60,7 @@ module PS2_IO(
 
 	reg ps2_rdn;
 	
-	always @(posedge io_read_clk) ack_o <= stb_i;
+	assign ack_o = stb_i;
 	
 	always @(posedge io_read_clk or posedge rst)
 		if ( rst ) begin

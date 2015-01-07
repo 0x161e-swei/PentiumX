@@ -73,8 +73,9 @@ module 	Vram_B(
 	end
 	*/
 
-	always @(posedge clk) ack_o <= stb_i;
-	
+	// always @(posedge clk) ack_o <= stb_i;
+	assign ack_o = stb_i;
+	 
 	always @(posedge clk) begin
 		if(stb_i && ack_o) begin
 				if(we_i) begin //write
