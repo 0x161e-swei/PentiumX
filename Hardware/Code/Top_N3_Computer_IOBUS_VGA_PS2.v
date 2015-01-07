@@ -18,9 +18,11 @@
 // Additional Comments: 
 //
 //////////////////////////////////////////////////////////////////////////////////
-`define			dw	 32						// Data bus Width
-`define			aw	 32						// Address bus Width
-`define			sw   `dw / 8				// Number of Select Lines
+`include "wb_conbus_defines.v"
+
+//`define			dw	 32						// Data bus Width
+//`define			aw	 32						// Address bus Width
+//`define			sw   `dw / 8				// Number of Select Lines
 
 module Top_N3_Computer_IOBUS_VGA_PS2(
 									clk_100mhz,
@@ -35,7 +37,7 @@ module Top_N3_Computer_IOBUS_VGA_PS2(
 									Green,
 									Blue,
 									HSYNC, 
-                                    VSYNC
+                           VSYNC
 									);
 //for wb input and output ---------------------------------------------------
 // Master 0 Interface

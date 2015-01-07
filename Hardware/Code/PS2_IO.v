@@ -47,7 +47,7 @@ module PS2_IO(
 	input wire we_i;
 	input wire stb_i;
 	output reg [7:0] dat_o;
-	output reg ack_o = 0;
+	output ack_o;
 
     input               io_read_clk, clk_ps2, rst, PS2_clk, PS2_Data, ps2_rd;
 
@@ -60,7 +60,7 @@ module PS2_IO(
 
 	reg ps2_rdn;
 	
-	always @(posedge io_read_clk) ack_o <= stb_i;
+	assign ack_o = stb_i;
 	
 	always @(posedge io_read_clk or posedge rst)
 		if ( rst ) begin

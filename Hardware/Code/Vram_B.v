@@ -46,7 +46,7 @@ module 	Vram_B(
 	input wire we_i;
 	input wire stb_i;
 	output reg [31:0] dat_o;
-	output reg ack_o;
+	output ack_o;
 	
 	//vga_read
 	input wire [10:0] vga_addr;
@@ -75,7 +75,7 @@ module 	Vram_B(
 	end
 	*/
 
-	always @(posedge clk) ack_o <= stb_i;
+	assign ack_o = stb_i;
 	
 	always @(posedge clk) begin
 		if(stb_i && ack_o) begin

@@ -41,7 +41,7 @@ module Mem_I_D 	(
 	input wire we_i;
 	input wire stb_i;
 	output reg [31:0] dat_o;
-	output reg ack_o = 0;
+	output ack_o;
 
 	input 				clk;
 	//input 				W_En;
@@ -59,7 +59,7 @@ module Mem_I_D 	(
 		$readmemb("../Coe/ChineseTest",RAM);
 	end
 
-	always @(posedge clk) ack_o <= stb_i;
+	assign ack_o = stb_i;
 	
 	always @(posedge clk) begin
 		if(stb_i && ack_o) begin
