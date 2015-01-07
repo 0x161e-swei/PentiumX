@@ -45,7 +45,7 @@ module VGA_IO(
 	output wire [ 1: 0] B;
 	output reg          HSYNC;
 	output reg          VSYNC;
-	output      [12: 0] vga_addr;
+	output      [10: 0] vga_addr;
 	output wire         vga_rdn;
 
 	// variable declarations
@@ -54,12 +54,12 @@ module VGA_IO(
 	wire                v_active;
 	wire        [18: 0] addr;
 
-	wire        [ 9: 0] font_addr;
-	wire        [ 7: 0] font_out;
+	wire        [11: 0] font_addr;
+	wire        [15: 0] font_out;
 
 	reg         [ 2: 0] dot_in;
-	reg         [ 7: 0] l_font_out;
-	reg         [10: 0] l_vram_out,vram_data;
+	reg         [15: 0] l_font_out;
+	reg         [31: 0] l_vram_out,vram_data;
 	reg         [18: 0] pixel_addr;
 	reg                 red, green, blue, vga_dispn;
 
@@ -67,28 +67,28 @@ module VGA_IO(
 	// module body
 	//
 	// wire [18:0] pixel_addr = addr;
-	wire [8:0] vga_row     = pixel_addr[18:10];
-	wire [9:0] vga_col     = pixel_addr[ 9: 0];
-	wire [2:0] font_row    = vga_row[ 2: 0];
-	wire [2:0] font_col    = vga_col[ 2: 0];
-	wire [5:0] char_row    = vga_row[ 8: 3];
-	wire [6:0] char_col    = vga_col[ 9: 3];
-	assign vga_addr        = char_row * (64 + 16) + addr[ 9: 3];
-	assign font_addr       = {vram_out[ 6: 0], font_row};
-	assign vga_rdn         = ~(v_active && (addr[ 2: 0] == 3'b000)); //
+	wire 		[ 8: 0] vga_row    = pixel_addr[18:10];							// 480	
+	wire 		[ 9: 0] vga_col    = pixel_addr[ 9: 0];							// 640
+	wire 		[ 3: 0] font_row   = vga_row[ 3: 0];							// 2^4 = 16
+	wire 		[ 3: 0] font_col   = vga_col[ 3: 0];
+	wire 		[ 4: 0] char_row   = vga_row[ 8: 4]; 							// 30 rows
+	wire 		[ 5: 0] char_col   = vga_col[ 9: 4];							// 40 colums 
+	assign 			 	vga_addr   = char_row * (32 + 8) + addr[ 9: 4];
+	assign 		 		font_addr  = {vram_out[7: 0], font_row};				// Actually the font_addr shoud be {vram_out[15: 0], font_row}
+	assign 		 		vga_rdn    = ~(v_active && (addr[ 2: 0] == 3'b000)); 	//
 
-	wire Blinking          = (Cursor[12:7] == char_row) && (Cursor[ 6: 0] == char_col) &&( vga_row[ 2: 0] > 3) && (~text_Cursor_switch); //&& (vga_col[2:0]<7 )
-	assign R[2]            =Blinking ? red ^ Blink : red;
-	assign R[1]            =Blinking ? red ^ Blink : red;
-	assign R[0]            =Blinking ? red ^ Blink : red;
+	wire 		 		Blinking   = (Cursor[12:7] == char_row) && (Cursor[ 6: 0] == char_col) &&( vga_row[ 3: 0] > 3) && (~text_Cursor_switch); //&& (vga_col[2:0]<7 )
+	assign 		 		R[2]       = Blinking ? red   ^ Blink : red;
+	assign 				R[1]       = Blinking ? red   ^ Blink : red;
+	assign 				R[0]       = Blinking ? red   ^ Blink : red;
 
-	assign G[2]            =Blinking ? green ^ Blink : green;
-	assign G[1]            =Blinking ? green ^ Blink : green;
-	assign G[0]            =Blinking ? green ^ Blink : green;
-
-	assign B[0]            =Blinking ? blue ^ Blink : blue;
-	assign B[1]            =Blinking ? blue ^ Blink : blue;
-
+	assign 				G[2]       = Blinking ? green ^ Blink : green;
+	assign 				G[1]       = Blinking ? green ^ Blink : green;
+	assign 				G[0]       = Blinking ? green ^ Blink : green;
+				
+	assign 				B[0]       = Blinking ? blue  ^ Blink : blue;
+	assign 				B[1]       = Blinking ? blue  ^ Blink : blue; 
+				
 	vga_core vga_Scans(
 					.vga_clk   (vga_clk),
 					.rst       (rst),
@@ -128,22 +128,30 @@ module VGA_IO(
 		if( vga_dispn )
 		dot_in = 3'b0;
 	else
-		case(vga_col[2:0])
-			3'b000: dot_in = encolor(l_vram_out[10: 8], l_font_out[7]);
-			3'b001: dot_in = encolor(l_vram_out[10: 8], l_font_out[6]);
-			3'b010: dot_in = encolor(l_vram_out[10: 8], l_font_out[5]);
-			3'b011: dot_in = encolor(l_vram_out[10: 8], l_font_out[4]);
-			3'b100: dot_in = encolor(l_vram_out[10: 8], l_font_out[3]);
-			3'b101: dot_in = encolor(l_vram_out[10: 8], l_font_out[2]);
-			3'b110: dot_in = encolor(l_vram_out[10: 8], l_font_out[1]);
-			3'b111: dot_in = encolor(l_vram_out[10: 8], l_font_out[0]);
+		case(vga_col[ 3: 0])
+			4'b0000: dot_in = encolor(l_vram_out[10: 8], l_font_out[15]);
+			4'b0001: dot_in = encolor(l_vram_out[10: 8], l_font_out[14]);
+			4'b0010: dot_in = encolor(l_vram_out[10: 8], l_font_out[13]);
+			4'b0011: dot_in = encolor(l_vram_out[10: 8], l_font_out[12]);
+			4'b0100: dot_in = encolor(l_vram_out[10: 8], l_font_out[11]);
+			4'b0101: dot_in = encolor(l_vram_out[10: 8], l_font_out[10]);
+			4'b0110: dot_in = encolor(l_vram_out[10: 8], l_font_out[ 9]);
+			4'b0111: dot_in = encolor(l_vram_out[10: 8], l_font_out[ 8]);
+			4'b1000: dot_in = encolor(l_vram_out[10: 8], l_font_out[ 7]);
+			4'b1001: dot_in = encolor(l_vram_out[10: 8], l_font_out[ 6]);
+			4'b1010: dot_in = encolor(l_vram_out[10: 8], l_font_out[ 5]);
+			4'b1011: dot_in = encolor(l_vram_out[10: 8], l_font_out[ 4]);
+			4'b1100: dot_in = encolor(l_vram_out[10: 8], l_font_out[ 3]);
+			4'b1101: dot_in = encolor(l_vram_out[10: 8], l_font_out[ 2]);
+			4'b1110: dot_in = encolor(l_vram_out[10: 8], l_font_out[ 1]);
+			4'b1111: dot_in = encolor(l_vram_out[10: 8], l_font_out[ 0]);
 		endcase
 	end
 
 
-	function [2:0] encolor;
-	input [2:0] color;
-	input fonto;
+	function [ 2: 0] encolor;
+	input 	 [ 2: 0] color;
+	input 			 fonto;
 	case(color)
 		3'b000: encolor = {1'b0, 1'b0, 1'b0};
 		3'b001: encolor = {1'b0, 1'b0, fonto};
@@ -162,9 +170,9 @@ module VGA_IO(
 		HSYNC         <= h_sync;                          // horizontal synchronization
 		vga_dispn     <= ~v_active;
 		VSYNC         <= v_sync;                          // vertical synchronization
-		red           <= vga_dispn ? 4'h0 : dot_in[2];    // 1-bit red
-		green         <= vga_dispn ? 4'h0 : dot_in[1];    // 1-bit green
-		blue          <= vga_dispn ? 4'h0 : dot_in[0];    // 1-bit blue
+		red           <= vga_dispn ? 1'h0 : dot_in[2];    // 1-bit red
+		green         <= vga_dispn ? 1'h0 : dot_in[1];    // 1-bit green
+		blue          <= vga_dispn ? 1'h0 : dot_in[0];    // 1-bit blue
 	end
 
 endmodule

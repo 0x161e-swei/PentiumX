@@ -4,13 +4,13 @@ module Font_table (
 					D_out
 					);
     //input               clk;
-    input  wire [ 9: 0] Addr;       // 8*8*128=2^3*2^3*2^7
-    output reg  [ 7: 0] D_out;      // Font dot
+    input  wire [11: 0] Addr;       // 8*8*128=2^3*2^3*2^7
+    output reg  [15: 0] D_out;      // Font dot
     
     (* bram_map="yes" *)
-    reg         [ 7: 0] Rom [   0:1023];
+    reg         [15: 0] Rom [   0:4095];
     initial begin
-        $readmemb("../Coe/Font.coe", Rom);
+        $readmemh("../Coe/Font16", Rom);
     end
     /*
     always @( negedge clk )begin
