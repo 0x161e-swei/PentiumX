@@ -263,6 +263,7 @@ module Top_N3_Computer_IOBUS_VGA_PS2(
 			        .D_Out              (vram_out)
 					);
 
+
 	//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 	wb_conbus_top UU4(
 					.clk_i(clk_100mhz), .rst_i(rst),
@@ -434,7 +435,6 @@ module Top_N3_Computer_IOBUS_VGA_PS2(
 					//wb_output
 					.dat_o				(s3_dat_i), 				
 					.ack_o				(s3_ack_i),
-					
 					.io_read_clk 		(io_read_clk),
 					.clk_ps2 			(clkdiv[0]),
 					.rst 				(rst),

@@ -40,6 +40,7 @@ module 	Vram_B(
 			   	//D_Out           
     			);
 	//cpu_read_write		
+	
 	input wire [31:0] dat_i;
 	input wire [31:0] adr_i;
 	input wire we_i;
