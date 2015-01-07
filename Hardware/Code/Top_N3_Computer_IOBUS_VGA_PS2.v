@@ -18,6 +18,10 @@
 // Additional Comments: 
 //
 //////////////////////////////////////////////////////////////////////////////////
+`define			dw	 32						// Data bus Width
+`define			aw	 32						// Address bus Width
+`define			sw   `dw / 8				// Number of Select Lines
+
 module Top_N3_Computer_IOBUS_VGA_PS2(
 									clk_100mhz,
 									BTN,
@@ -33,6 +37,102 @@ module Top_N3_Computer_IOBUS_VGA_PS2(
 									HSYNC, 
                                     VSYNC
 									);
+
+//for wb input and output ---------------------------------------------------
+// Master 0 Interface
+	wire	[`dw-1:0]	m0_dat_i;
+	wire	[`dw-1:0]	m0_dat_o;
+	wire	[`aw-1:0]	m0_adr_i;
+	wire	[`sw-1:0]	m0_sel_i;
+	wire				m0_we_i;
+	wire				m0_stb_i;
+	wire				m0_ack_o;
+
+	// Master 1 Interface
+	wire	[`dw-1:0]	m1_dat_i;
+	wire	[`dw-1:0]	m1_dat_o;
+	wire	[`aw-1:0]	m1_adr_i;
+	wire	[`sw-1:0]	m1_sel_i;
+	wire				m1_we_i;
+	wire				m1_stb_i;
+	wire				m1_ack_o;
+
+
+	// Slave 0 Interface
+	wire	[`dw-1:0]	s0_dat_i;
+	wire	[`dw-1:0]	s0_dat_o;
+	wire	[`aw-1:0]	s0_adr_o;
+	wire	[`sw-1:0]	s0_sel_o;
+	wire				s0_we_o;
+	wire				s0_stb_o;
+	wire				s0_ack_i;
+
+	// Slave 1 Interface
+	wire	[`dw-1:0]	s1_dat_i;
+	wire	[`dw-1:0]	s1_dat_o;
+	wire	[`aw-1:0]	s1_adr_o;
+	wire	[`sw-1:0]	s1_sel_o;
+	wire				s1_we_o;
+	wire				s1_stb_o;
+	wire				s1_ack_i;
+
+	// Slave 2 Interface
+	wire	[`dw-1:0]	s2_dat_i;
+	wire	[`dw-1:0]	s2_dat_o;
+	wire	[`aw-1:0]	s2_adr_o;
+	wire	[`sw-1:0]	s2_sel_o;
+	wire				s2_we_o;
+	wire				s2_stb_o;
+	wire				s2_ack_i;
+
+	// Slave 3 Interface
+	wire	[`dw-1:0]	s3_dat_i;
+	wire	[`dw-1:0]	s3_dat_o;
+	wire	[`aw-1:0]	s3_adr_o;
+	wire	[`sw-1:0]	s3_sel_o;
+	wire				s3_we_o;
+	wire				s3_stb_o;
+	wire				s3_ack_i;
+
+	// Slave 4 Interface
+	wire	[`dw-1:0]	s4_dat_i;
+	wire	[`dw-1:0]	s4_dat_o;
+	wire	[`aw-1:0]	s4_adr_o;
+	wire	[`sw-1:0]	s4_sel_o;
+	wire				s4_we_o;
+	wire				s4_stb_o;
+	wire				s4_ack_i;
+
+	// Slave 5 Interface
+	wire	[`dw-1:0]	s5_dat_i;
+	wire	[`dw-1:0]	s5_dat_o;
+	wire	[`aw-1:0]	s5_adr_o;
+	wire	[`sw-1:0]	s5_sel_o;
+	wire				s5_we_o;
+	wire				s5_stb_o;
+	wire				s5_ack_i;
+
+	// Slave 6 Interface
+	wire	[`dw-1:0]	s6_dat_i;
+	wire	[`dw-1:0]	s6_dat_o;
+	wire	[`aw-1:0]	s6_adr_o;
+	wire	[`sw-1:0]	s6_sel_o;
+	wire				s6_we_o;
+	wire				s6_stb_o;
+	wire				s6_ack_i;
+
+
+	// Slave 7 Interface
+	wire	[`dw-1:0]	s7_dat_i;
+	wire	[`dw-1:0]	s7_dat_o;
+	wire	[`aw-1:0]	s7_adr_o;
+	wire	[`sw-1:0]	s7_sel_o;
+	wire				s7_we_o;
+	wire				s7_stb_o;
+	wire				s7_ack_i;
+	
+//----------------------------------------------------------
+
 
 
 	input               clk_100mhz;
@@ -129,6 +229,15 @@ module Top_N3_Computer_IOBUS_VGA_PS2(
 
 	// data RAM (2048¡Á32)
 	Mem_I_D       	U2(
+					//wb_input
+					.dat_i				(s0_dat_o), 
+					.adr_i				(s0_adr_o), 
+					.we_i				(s0_we_o),
+					.stb_i				(s0_stb_o),
+					//wb_output
+					.dat_o				(s0_dat_i), 				
+					.ack_o				(s0_ack_i),
+
                     .clk                (clk_m),
 			        .W_En               (data_ram_we),
 			        .Addr               (ram_addr),
@@ -138,6 +247,15 @@ module Top_N3_Computer_IOBUS_VGA_PS2(
 
 	// VRAM (4800¡Á11)
 	Vram_B        	U3(
+					//wb_input
+					.dat_i				(s1_dat_o), 
+					.adr_i				(s1_adr_o), 
+					.we_i				(s1_we_o),
+					.stb_i				(s1_stb_o),
+					//wb_output
+					.dat_o				(s1_dat_i), 				
+					.ack_o				(s1_ack_i),
+
                     .clk               	(clk_m),
 			        .W_En               (vram_we),
         			.Addr              	(vram_addr),
@@ -146,39 +264,97 @@ module Top_N3_Computer_IOBUS_VGA_PS2(
 					);
 
 	//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	wb_conbus_top UU4(
+					.clk_i(clk_100mhz), .rst_i(rst),
+
+					// Master 0 Interface
+					.m0_dat_i(m0_dat_i), .m0_dat_o(m0_dat_o), .m0_adr_i(m0_adr_i), .m0_sel_i(m0_sel_i), .m0_we_i(m0_we_i),
+					.m0_stb_i(m0_stb_i), .m0_ack_o(m0_ack_o),
+
+					// Master 1 Interface
+					.m1_dat_i(m1_dat_i), .m1_dat_o, .m1_adr_i, .m1_sel_i, .m1_we_i,
+					.m1_stb_i, .m1_ack_o, 
+
+
+					// Slave 0 Interface
+					.s0_dat_i(s0_dat_i), .s0_dat_o(s0_dat_o), .s0_adr_o(s0_adr_o), .s0_sel_o(s0_sel_o), .s0_we_o(s0_we_o),
+					.s0_stb_o(s0_stb_o), .s0_ack_i(s0_ack_i),
+
+					// Slave 1 Interface
+					.s1_dat_i(s1_dat_i), .s1_dat_o(s1_dat_o), .s1_adr_o(s1_adr_o), .s1_sel_o(s1_sel_o), .s1_we_o(s1_we_o),
+					.s1_stb_o(s1_stb_o), .s1_ack_i(s1_ack_i),
+
+					// Slave 2 Interface
+					.s2_dat_i(s2_dat_i), .s2_dat_o(s2_dat_o), .s2_adr_o(s2_adr_o), .s2_sel_o(s2_sel_o), .s2_we_o(s2_we_o),
+					.s2_stb_o(s2_stb_o), .s2_ack_i(s2_ack_i),
+
+					// Slave 3 Interface
+					.s3_dat_i(s3_dat_i), .s3_dat_o(s3_dat_o), .s3_adr_o(s3_adr_o), .s3_sel_o(s3_sel_o), .s3_we_o(s3_we_o),
+					.s3_stb_o(s3_stb_o), .s3_ack_i(s3_ack_i),
+
+					// Slave 4 Interface
+					.s4_dat_i(s4_dat_i), .s4_dat_o(s4_dat_o), .s4_adr_o(s4_adr_o), .s4_sel_o(s4_sel_o), .s4_we_o(s4_we_o),
+					.s4_stb_o(s4_stb_o), .s4_ack_i(s4_ack_i),
+
+					// Slave 5 Interface
+					.s5_dat_i(s5_dat_i), .s5_dat_o(s5_dat_o), .s5_adr_o(s5_adr_o), .s5_sel_o(s5_sel_o), .s5_we_o(s5_we_o),
+					.s5_stb_o(s5_stb_o), .s5_ack_i(s5_ack_i),
+
+					// Slave 6 Interface
+					.s6_dat_i(s6_dat_i), .s6_dat_o(s6_dat_o), .s6_adr_o(s6_adr_o), .s6_sel_o(s6_sel_o), .s6_we_o(s6_we_o),
+					.s6_stb_o(s6_stb_o), .s6_ack_i(s6_ack_i),
+
+					// Slave 7 Interface
+					.s7_dat_i(s7_dat_i), .s7_dat_o(s7_dat_o), .s7_adr_o(s7_adr_o), .s7_sel_o(s7_sel_o), .s7_we_o(s7_we_o),
+					.s7_stb_o(s7_stb_o), .s7_ack_i(s7_ack_i)
+					
+					//for MIO_BUS
+	);
+
+	//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 
 	MIO_BUS       	U4(
+					//wb_input
+					.dat_i				(s2_dat_o), 
+					.adr_i				(s2_adr_o), 
+					.we_i				(s2_we_o),
+					.stb_i				(s2_stb_o),
+					//wb_output
+					.dat_o				(s2_dat_i), 				
+					.ack_o				(s2_ack_i),
+
                     .clk                (clk_100mhz),
         			.rst                (rst),
 		      	    .BTN                (button_out),
         			.SW                 (SW_OK),
-        			.vga_rdn            (vga_rdn), 			//
-        			.ps2_ready          (ps2_ready),
-        			.mem_w              (mem_w),
-        			.key 				(key),
-        			.Cpu_data2bus 		(Cpu_data2bus), 	// Data from CPU
-        			.addr_bus 			(cpu_addr),
-        			.vga_addr 			(vga_addr),
-		      	    .ram_data_out 		(ram_data_out),
-        			.vram_out 			(vram_out),
+        			//.vga_rdn            (vga_rdn), 			//
+        			//.ps2_ready          (ps2_ready),
+        			//.mem_w              (mem_w),
+        			//.key 				(key),
+        			//.Cpu_data2bus 		(Cpu_data2bus), 	// Data from CPU
+        			//.addr_bus 			(cpu_addr),
+        			//.vga_addr 			(vga_addr),
+		      	    //.ram_data_out 		(ram_data_out),
+        			//.vram_out 			(vram_out),
         			.led_out 			(led_out),
         			.counter_out 		(counter_out),
         			.counter0_out 		(counter_OUT0),
         			.counter1_out 		(counter_OUT1),
         			.counter2_out 		(counter_OUT2),
 
-        			.CPU_wait 			(MIO_ready),
-        			.Cpu_data4bus 		(Cpu_data4bus), 	// Data write to CPU
-        			.ram_data_in 		(ram_data_in), 		// From CPU write to Memory
-        			.ram_addr			(ram_addr), 		// Memory Address signals
-        			.vram_data_in 		(vram_data_in), 	// From CPU write to Vram Memory
-        			.vram_addr 			(vram_addr), 		// Vram Address signals
-        			.data_ram_we 		(data_ram_we),
-        			.vram_we 			(vram_we),
+        			//.CPU_wait 			(MIO_ready),
+        			//.Cpu_data4bus 		(Cpu_data4bus), 	// Data write to CPU
+        			//.ram_data_in 		(ram_data_in), 		// From CPU write to Memory
+        			//.ram_addr			(ram_addr), 		// Memory Address signals
+        			//.vram_data_in 		(vram_data_in), 	// From CPU write to Vram Memory
+        			//.vram_addr 			(vram_addr), 		// Vram Address signals
+        			//.data_ram_we 		(data_ram_we),
+        			//.vram_we 			(vram_we),
         			.GPIOffffff00_we 	(GPIOffffff00_we),
         			.GPIOfffffe00_we 	(GPIOfffffe00_we),
 			        .counter_we 		(counter_we),
-        			.ps2_rd 			(ps2_rd),
+        			//.ps2_rd 			(ps2_rd),
 					.Peripheral_in 		(Peripheral_in)
 					);
 
@@ -250,6 +426,15 @@ module Top_N3_Computer_IOBUS_VGA_PS2(
 	assign io_read_clk = Clk_CPU;
 
 	PS2_IO 			U12(
+					//wb_input
+					.dat_i				(s3_dat_o), 
+					.adr_i				(s3_adr_o), 
+					.we_i				(s3_we_o),
+					.stb_i				(s3_stb_o),
+					//wb_output
+					.dat_o				(s3_dat_i), 				
+					.ack_o				(s3_ack_i),
+					
 					.io_read_clk 		(io_read_clk),
 					.clk_ps2 			(clkdiv[0]),
 					.rst 				(rst),
