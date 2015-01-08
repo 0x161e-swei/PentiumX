@@ -75,29 +75,29 @@ module 	Vram_B(
 	*/
 
 	assign ack_o = stb_i;
-	wire vram_wr;
-	assign vram_wr = stb_i & ack_o;
+	//wire vram_wr;
+	//assign vram_wr = stb_i & ack_o;
 	assign wea =  stb_i & ack_o & we_i;
 	
-	always @(posedge vram_wr) begin
-		if(we_i) begin //write
-			dina <= dat_i;
-		end
-		else begin //read
-			dat_o <= douta;
-		end
-	end
-
-//	always @(posedge clk) begin
-//		if(stb_i && ack_o) begin
-//			if(we_i) begin //write
-//				dina <= dat_i;
-//			end
-//			else begin //read
-//				dat_o <= douta;
-//			end
+//	always @(posedge vram_wr) begin
+//		if(we_i) begin //write
+//			dina <= dat_i;
+//		end
+//		else begin //read
+//			dat_o <= douta;
 //		end
 //	end
+
+	always @(posedge clk) begin
+		if(stb_i && ack_o) begin
+			if(we_i) begin //write
+				dina <= dat_i;
+			end
+			else begin //read
+				dat_o <= douta;
+			end
+		end
+	end
 
 	//always @(posedge clk ) begin
 	//	if ( W_En ) begin

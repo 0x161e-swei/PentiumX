@@ -113,15 +113,17 @@ module MIO_BUS(
 	//assign vram_addr 	= ~vga_rdn? vga_addr : cpu_vram_addr;
 
 	assign ack_o = stb_i;
-	wire MIO_wr;
-	assign MIO_wr = stb_i && ack_o;
+	//wire MIO_wr;
+	//assign MIO_wr = stb_i && ack_o;
 	assign wea = stb_i & ack_o & we_i;
-	always @(posedge MIO_wr) begin
-		if(we_i) begin //write
-			Cpu_data2bus <= dat_i;
-		end
-		else begin //read
-			dat_o <= Cpu_data4bus;
+	always @(posedge clk) begin
+		if(stb_i & ack_o) begin
+			if(we_i) begin //write
+				Cpu_data2bus <= dat_i;
+			end
+			else begin //read
+				dat_o <= Cpu_data4bus;
+			end
 		end
 	end
 

@@ -59,7 +59,7 @@ start: #00000080
 
 	#初始化引导界面
 	lui  $t2, 0x000c
-	addi $t1, $zero, 0x12c0 #显存vram单元数 19200 ? 4800
+	addi $t1, $zero, 0x4b0 #显存vram单元数 1200
 CL_next_init:
 	sw   $zero, 0($t2)
 	addi $t2, $t2, 4 #下一个单元
