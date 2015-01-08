@@ -216,15 +216,20 @@ module Top_N3_Computer_IOBUS_VGA_PS2(
 	Muliti_cycle_Cpu U1(
                     .clk                (Clk_CPU),
 					.reset              (rst),
-					.MIO_ready          (MIO_ready), 		// MIO_ready
+					.MIO_ready          (m0_ack_o), 		// MIO_ready
 
 					// Internal signals:
 					.pc_out             (pc), 				// Test
 					.Inst               (Inst), 			// Test
-					.mem_w              (mem_w),
-					.Addr_out           (cpu_addr),
-					.data_out           (Cpu_data2bus),
-					.data_in            (Cpu_data4bus),
+					//.mem_w            (mem_w),
+                    .mem_w              (m0_we_i),
+                    .cpu_stb_o          (m0_stb_i),
+					//.Addr_out         (cpu_addr),
+                    .Addr_out           (m0_adr_i),
+					//.data_out         (Cpu_data2bus),
+                    .data_out           (m0_dat_i),
+					//.data_in          (Cpu_data4bus),
+                    .data_in            (m0_dat_o),
 					.CPU_MIO            (CPU_MIO),
 					.state              (state) 			// Test
 					);
@@ -232,19 +237,19 @@ module Top_N3_Computer_IOBUS_VGA_PS2(
 	// data RAM (2048¡Á32)
 	Mem_I_D       	U2(
 					//wb_input
-					.dat_i				(s0_dat_o), 
-					.adr_i				(s0_adr_o), 
-					.we_i				(s0_we_o),
-					.stb_i				(s0_stb_o),
+					.dat_i				(s2_dat_o), 
+					.adr_i				(s2_adr_o), 
+					.we_i				(s2_we_o),
+					.stb_i				(s2_stb_o),
 					//wb_output
-					.dat_o				(s0_dat_i), 				
-					.ack_o				(s0_ack_i),
+					.dat_o				(s2_dat_i), 				
+					.ack_o				(s2_ack_i),
 
-                    .clk                (clk_m),
-			        .W_En               (data_ram_we),
-			        .Addr               (ram_addr),
-			        .D_In               (ram_data_in),
-        			.D_Out              (ram_data_out)
+                    .clk                (clk_m)
+			        // .W_En               (data_ram_we),
+			        // .Addr               (ram_addr),
+			        // .D_In               (ram_data_in),
+        			// .D_Out              (ram_data_out)
         			); // Addre_Bus [9 : 0] ,Data_Bus [31 : 0]
 
 	// VRAM (4800¡Á11)
@@ -257,13 +262,15 @@ module Top_N3_Computer_IOBUS_VGA_PS2(
 					//wb_output
 					.dat_o				(s1_dat_i), 				
 					.ack_o				(s1_ack_i),
-
-                    .clk               	(clk_m),
-			        .W_En               (vram_we),
-        			.Addr              	(vram_addr),
-        		  	.D_In               (vram_data_in),
-			        .D_Out              (vram_out)
+                    .vga_addr           (vga_addr),
+                    .vga_dout           (vram_out),
+                    .clk               	(clk_m)
+//			        .W_En               (vram_we),
+//        			.Addr              	(vram_addr),
+//        		  	.D_In               (vram_data_in),
+//			        .D_Out              (vram_out)
 					);
+
 
 	//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 	wb_conbus_top UU4(
@@ -274,8 +281,8 @@ module Top_N3_Computer_IOBUS_VGA_PS2(
 					.m0_stb_i(m0_stb_i), .m0_ack_o(m0_ack_o),
 
 					// Master 1 Interface
-					.m1_dat_i(m1_dat_i), .m1_dat_o, .m1_adr_i, .m1_sel_i, .m1_we_i,
-					.m1_stb_i, .m1_ack_o, 
+					.m1_dat_i(m1_dat_i), .m1_dat_o(m1_dat_o), .m1_adr_i(m1_adr_i), .m1_sel_i(m1_sel_i), .m1_we_i(m1_we_i),
+					.m1_stb_i(m1_stb_i), .m1_ack_o(m1_ack_o), 
 
 
 					// Slave 0 Interface
@@ -318,13 +325,13 @@ module Top_N3_Computer_IOBUS_VGA_PS2(
 
 	MIO_BUS       	U4(
 					//wb_input
-					.dat_i				(s2_dat_o), 
-					.adr_i				(s2_adr_o), 
-					.we_i				(s2_we_o),
-					.stb_i				(s2_stb_o),
+					.dat_i				(s3_dat_o), 
+					.adr_i				(s3_adr_o), 
+					.we_i				(s3_we_o),
+					.stb_i				(s3_stb_o),
 					//wb_output
-					.dat_o				(s2_dat_i), 				
-					.ack_o				(s2_ack_i),
+					.dat_o				(s3_dat_i), 				
+					.ack_o				(s3_ack_i),
 
                     .clk                (clk_100mhz),
         			.rst                (rst),
@@ -429,14 +436,13 @@ module Top_N3_Computer_IOBUS_VGA_PS2(
 
 	PS2_IO 			U12(
 					//wb_input
-					.dat_i				(s3_dat_o), 
-					.adr_i				(s3_adr_o), 
-					.we_i				(s3_we_o),
-					.stb_i				(s3_stb_o),
+					.dat_i				(s4_dat_o), 
+					.adr_i				(s4_adr_o), 
+					.we_i				(s4_we_o),
+					.stb_i				(s4_stb_o),
 					//wb_output
-					.dat_o				(s3_dat_i), 				
-					.ack_o				(s3_ack_i),
-					
+					.dat_o				(s4_dat_i), 				
+					.ack_o				(s4_ack_i),
 					.io_read_clk 		(io_read_clk),
 					.clk_ps2 			(clkdiv[0]),
 					.rst 				(rst),
@@ -445,8 +451,8 @@ module Top_N3_Computer_IOBUS_VGA_PS2(
 					.ps2_rd 			(ps2_rd),
 
 					.ps2_ready 			(ps2_ready),
-					.key_d      		(key_d),
-					.key 				(key)
+					.key_d      		(key_d)
+					//.key 				(key)
 					);
 
 endmodule

@@ -38,7 +38,7 @@ module PS2_IO(
 
 				ps2_ready,
 				key_d,
-				key
+				//key
 				);
 
 	//cpu_read_write		
@@ -52,7 +52,7 @@ module PS2_IO(
     input               io_read_clk, clk_ps2, rst, PS2_clk, PS2_Data, ps2_rd;
 
     output              ps2_ready;
-    output reg  [ 7: 0] key;
+    //output reg  [ 7: 0] key;
     output reg  [31: 0] key_d;
     
 
@@ -71,9 +71,9 @@ module PS2_IO(
 			if(~we_i && ps2_ready) begin
 				key_d     <= {key_d[23:0], ps2_key};   // TEST
 				ps2_rdn   <= we_i | ~ps2_ready;     // cancel key_ready
-				key <= ps2_key;
+				dat_o <= ps2_key;
 			end
-			else key <= 8'haa;
+			else dat_o <= 8'haa;
 		end
 		else begin
 			ps2_rdn  <=1;

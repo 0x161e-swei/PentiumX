@@ -58,7 +58,7 @@ module wb_conbus_arb(
 	input				clk;
 	input				rst;
 	input	[ 1: 0]		req;		// Req input
-	output	[ 2: 0]		gnt; 		// Grant output
+	output				gnt; 		// Grant output
 	//input		next;		// Next Target
 
 	///////////////////////////////////////////////////////////////////////
@@ -67,8 +67,8 @@ module wb_conbus_arb(
 	//
 
 
-	parameter	      	grant0 = 3'h0,
-	                	grant1 = 3'h1;
+	parameter	      	grant0 = 1'h0,
+	                	grant1 = 1'h1;
 	            
 
 	///////////////////////////////////////////////////////////////////////
@@ -76,7 +76,7 @@ module wb_conbus_arb(
 	// Local Registers and Wires
 	//
 
-	reg 	[ 2: 0]		state, next_state;
+	reg 				state = 0, next_state = 0;
 
 	///////////////////////////////////////////////////////////////////////
 	//

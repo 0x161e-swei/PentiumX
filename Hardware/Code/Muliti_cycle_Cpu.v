@@ -30,7 +30,8 @@ module Muliti_cycle_Cpu(
 						Addr_out,	
 						data_out,						
 						CPU_MIO,
-						state
+						state,
+                        cpu_stb_o
 						);
 
 	input wire 			clk, reset, MIO_ready;
@@ -40,13 +41,15 @@ module Muliti_cycle_Cpu(
 	output wire [31: 0] Addr_out, data_out;						
 	output wire [ 4: 0] state;
 	output wire 		mem_w, CPU_MIO;	
-
+    output wire         cpu_stb_o;
 
 	wire 		[31: 0] PC_Current;
 	wire 		[15: 0] imm;
 	wire 		[ 3: 0] ALU_operation;
 	wire 		[ 1: 0] RegDst, MemtoReg, ALUSrcB, PCSource, ALUSrcA;
-	wire 				MemRead, MemWrite, IorD, IRWrite, RegWrite, PCWrite, PCWriteCond, Beq, data2Mem, zero, overflow;			
+	wire 				MemRead, MemWrite, IorD, IRWrite, RegWrite, 
+						PCWrite, PCWriteCond, Beq, data2Mem, zero, 
+						overflow, Signext;			
 
 
 
@@ -73,7 +76,8 @@ module Muliti_cycle_Cpu(
  					.ALU_operation		(ALU_operation),
  					.state_out			(state),
  					.zero				(zero),
- 					.overflow 			(overflow)
+ 					.overflow 			(overflow),
+ 					.Signext			(Signext)
  					);
 
 	data_path M2(
@@ -101,11 +105,15 @@ module Muliti_cycle_Cpu(
 					.data_out 	 		(data_out),
 					.M_addr 			(Addr_out),
 					.zero 				(zero),
-					.overflow 			(overflow)
+					.overflow 			(overflow),
+					.Signext			(Signext)
 					);
 
+    
+	assign mem_w 	    = MemWrite && ~MemRead;
+	assign cpu_stb_o    = MemWrite | MemRead;			// Used for wishbone interface 
+	assign pc_out	    = PC_Current;
+	
 
-	assign mem_w 	= MemWrite && ~MemRead;
-	assign pc_out	= PC_Current;
 
 endmodule

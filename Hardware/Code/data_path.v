@@ -166,7 +166,7 @@ module data_path(
   mux4to1_32 mux_Alu_B(
          			.a					(rdata_B), 						//reg out B
          			.b					(32'h00000004), 				//4 for PC+4
-         			.c					(imm_ext), 			//imm
+         			.c					(imm_ext), 						//imm
          			.d					({{14{imm[15]}},imm,2'b00}),	// offset
          			.sel 				(ALUSrcB),
          			.o					(Alu_B)
