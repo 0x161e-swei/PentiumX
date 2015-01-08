@@ -448,11 +448,11 @@ module Top_N3_Computer_IOBUS_VGA_PS2(
 					.rst 				(rst),
 					.PS2_clk 			(PS2_clk),
 					.PS2_Data 			(PS2_Data),
-					.ps2_rd 			(ps2_rd),
+					//.ps2_rd 			(ps2_rd),
 
 					.ps2_ready 			(ps2_ready),
-					.key_d      		(key_d)
-					//.key 				(key)
+					.key_d      		(key_d),
+					.key 				(key)
 					);
 
 endmodule

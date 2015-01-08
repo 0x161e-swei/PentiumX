@@ -61,6 +61,9 @@ module Mem_I_D 	(
 
 	assign #1 ack_o = stb_i;
 	
+	//wire mem_wr;
+	//assign mem_wr = stb_i && ack_o;
+	
 	always @(posedge clk) begin
 		if(stb_i && ack_o) begin
 			if(we_i) begin //write

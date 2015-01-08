@@ -45,7 +45,7 @@ module 	Vram_B(
 	input wire [31:0] adr_i;
 	input wire we_i;
 	input wire stb_i;
-	output reg [31:0] dat_o;
+	output reg [31:0] dat_o = 0;
 	output ack_o;
 	
 	//vga_read
@@ -55,7 +55,7 @@ module 	Vram_B(
 	input 				clk;
 
 	reg [10:0] addra;
-	reg wea;
+	wire wea;
 	reg [31:0] dina;
 	wire [31:0] douta;
 	wire [10:0] vram_addr;
@@ -75,23 +75,29 @@ module 	Vram_B(
 	*/
 
 	assign ack_o = stb_i;
+	wire vram_wr;
+	assign vram_wr = stb_i & ack_o;
+	assign wea =  stb_i & ack_o & we_i;
 	
-
-	always @(posedge clk) begin
-		if(stb_i && ack_o) begin
-			if(we_i) begin //write
-				dina <= dat_i;
-				wea <= 1;
-			end
-			else begin //read
-				wea <= 0;
-				dat_o <= douta;
-			end
+	always @(posedge vram_wr) begin
+		if(we_i) begin //write
+			dina <= dat_i;
 		end
-		else begin
-			wea <= 0;
+		else begin //read
+			dat_o <= douta;
 		end
 	end
+
+//	always @(posedge clk) begin
+//		if(stb_i && ack_o) begin
+//			if(we_i) begin //write
+//				dina <= dat_i;
+//			end
+//			else begin //read
+//				dat_o <= douta;
+//			end
+//		end
+//	end
 
 	//always @(posedge clk ) begin
 	//	if ( W_En ) begin
@@ -101,7 +107,7 @@ module 	Vram_B(
 	//end
 
 
-	vram_2p vram_2p(
+	Vram_2 vram_2p(
 				//for cpu
 				.clka(clk), // input clka
 				.wea(wea), // input [0 : 0] wea

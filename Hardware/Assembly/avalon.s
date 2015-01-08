@@ -394,7 +394,7 @@ Clear_screen:
 	sw   $t1, 4($sp)
 	sw   $t2, 8($sp)
 	lui  $t2, 0x000c
-	addi $t0, $zero, 0x12c0 #显存vram单元数 19200 ? 4800
+	addi $t0, $zero, 0x4b0 #显存vram单元数 19200 ? 4800
 CL_next:
 	sw   $zero, 0($t2)
 	addi $t2, $t2, 4 #下一个单元

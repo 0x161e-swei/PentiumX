@@ -52,9 +52,10 @@ module data_path(
     input wire 			clk, reset;
     input wire 	 		MIO_ready, IorD, RegWrite, IRWrite, PCWrite, PCWriteCond, Beq, data2Mem, Signext;
 
-    input wire  [ 1: 0] RegDst, ALUSrcA, ALUSrcB, PCSource, MemtoReg;
+    input wire  [ 1: 0] RegDst, ALUSrcA, ALUSrcB, MemtoReg;
+	 input wire  [ 2: 0] PCSource;
     input wire  [ 3: 0] ALU_operation;
-	input wire  [31: 0] data2CPU;
+	 input wire  [31: 0] data2CPU;
 
     output reg  [31: 0] PC_Current; 
     output reg  [31: 0]	Inst_R = 0;
@@ -181,11 +182,12 @@ module data_path(
           PC_Current <= 32'h00000000;
       	else if (modificative == 1)begin
           	case ( PCSource )
-             	2'b00: if (MIO_ready) 
+             	3'b000: if (MIO_ready) 
              			PC_Current <= res; 												// PC+4
-              	2'b01: 	PC_Current <= ALU_Out; 											// branch
-              	2'b10: 	PC_Current <= {PC_Current[31:28],Inst_R[25:0],2'b00}; 			// jump
-              	2'b11: 	PC_Current <= ALU_Out; 											// j$r
+              	3'b001: 	PC_Current <= ALU_Out; 											// branch
+              	3'b010: 	PC_Current <= {PC_Current[31:28],Inst_R[25:0],2'b00}; 			// jump
+              	3'b011: 	PC_Current <= res; 											// jr
+					3'b100:	;
           	endcase
      	end
 	end

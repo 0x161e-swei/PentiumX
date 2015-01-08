@@ -29,39 +29,59 @@ module PS2_IO(
 				dat_o, 				
 				ack_o,
 
-                io_read_clk,
+            io_read_clk,
 				clk_ps2,
 				rst,
 				PS2_clk,
 				PS2_Data,
-				ps2_rd,
+				//ps2_rd,
 
 				ps2_ready,
 				key_d,
-				//key
+				key
 				);
 
 	//cpu_read_write		
-	input wire [7:0] dat_i;
+	input wire [31:0] dat_i;
 	input wire [31:0] adr_i;
 	input wire we_i;
 	input wire stb_i;
-	output reg [7:0] dat_o;
+	output reg [31:0] dat_o;
 	output ack_o;
 
-    input               io_read_clk, clk_ps2, rst, PS2_clk, PS2_Data, ps2_rd;
+    input               io_read_clk, clk_ps2, rst, PS2_clk, PS2_Data;
 
     output              ps2_ready;
-    //output reg  [ 7: 0] key;
+    output wire  [ 7: 0] key;
     output reg  [31: 0] key_d;
     
 
 
 
-	reg ps2_rdn;
+	wire ps2_rdn;
 	
 	assign ack_o = stb_i;
+	wire ps2_rd;
+	assign ps2_rd = stb_i & ack_o & ~we_i;
 	
+	assign ps2_rdn  = ~(ps2_rd & ps2_ready); 
+	
+	always @(posedge ps2_rd or posedge rst)
+		if ( rst ) begin
+            //ps2_rdn   <= 1; 
+            key_d     <= 0; 
+        end
+		else if(ps2_ready) begin
+				key_d     <= {key_d[23:0], ps2_key};   // TEST
+				dat_o <= {23'h0, ps2_ready, ps2_key};
+				//ps2_rdn   <= we_i | ~ps2_ready;     // cancel key_ready
+			end
+		else begin
+			//ps2_rdn  <=1;
+			dat_o <= 32'h0000_00aa;
+		end
+	
+	/*
 	always @(posedge io_read_clk or posedge rst)
 		if ( rst ) begin
             ps2_rdn   <= 1; 
@@ -70,14 +90,16 @@ module PS2_IO(
 		else if(stb_i && ack_o) begin
 			if(~we_i && ps2_ready) begin
 				key_d     <= {key_d[23:0], ps2_key};   // TEST
+				dat_o <= {23'h0, 1'b1, ps2_key};
 				ps2_rdn   <= we_i | ~ps2_ready;     // cancel key_ready
-				dat_o <= ps2_key;
+				
 			end
-			else dat_o <= 8'haa;
+			else dat_o <= 32'h0000_00aa;
 		end
 		else begin
 			ps2_rdn  <=1;
-		end
+			dat_o <= 32'h0000_00aa;
+		end*/
 
 	/*
 	always @(posedge io_read_clk or posedge rst)
@@ -91,9 +113,9 @@ module PS2_IO(
 		end
 		else ps2_rdn  <=1;*/
 
-	//assign key = ( ps2_rd && ps2_ready) ? ps2_key : 8'haa;
+	assign key = (ps2_ready) ? ps2_key : 8'haa;
 
-	wire [7:0]ps2_key;
+	wire [7:0] ps2_key;
 	wire ps2_ready;
 
 	ps2_kbd ps2_kbd(

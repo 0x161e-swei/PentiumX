@@ -82,28 +82,51 @@ assign tx_wr = stb_i & ack_o & we_i & (adr_i[1:0] == 2'b00);
 parameter default_divisor = clk_freq/baud/16;
 
 assign ack_o = stb_i;
+wire uart_wr;
+assign uart_wr = stb_i && ack_o;
 
-always @(posedge sys_clk) begin
+always @(posedge uart_wr or posedge sys_rst) begin
 	if(sys_rst) begin
 		divisor <= default_divisor;
 		dat_o <= 32'd0;
 	end else begin
 		dat_o <= 32'd0;
-		if(stb_i && ack_o/*csr_selected*/) begin
+		case(adr_i[1:0])
+			2'b00: dat_o <= rx_data;
+			2'b01: dat_o <= divisor;
+			2'b10: dat_o <= thru;
+		endcase
+		if(we_i/*csr_we*/) begin
 			case(adr_i[1:0])
-				2'b00: dat_o <= rx_data;
-				2'b01: dat_o <= divisor;
-				2'b10: dat_o <= thru;
+				2'b00:; /* handled by transceiver */
+				2'b01: divisor <= dat_i[15:0];
+				2'b10: thru <= dat_i[0];
 			endcase
-			if(we_i/*csr_we*/) begin
-				case(adr_i[1:0])
-					2'b00:; /* handled by transceiver */
-					2'b01: divisor <= dat_i[15:0];
-					2'b10: thru <= dat_i[0];
-				endcase
-			end
 		end
 	end
 end
+
+//always @(posedge sys_clk) begin
+//	if(sys_rst) begin
+//		divisor <= default_divisor;
+//		dat_o <= 32'd0;
+//	end else begin
+//		dat_o <= 32'd0;
+//		if(stb_i && ack_o/*csr_selected*/) begin
+//			case(adr_i[1:0])
+//				2'b00: dat_o <= rx_data;
+//				2'b01: dat_o <= divisor;
+//				2'b10: dat_o <= thru;
+//			endcase
+//			if(we_i/*csr_we*/) begin
+//				case(adr_i[1:0])
+//					2'b00:; /* handled by transceiver */
+//					2'b01: divisor <= dat_i[15:0];
+//					2'b10: thru <= dat_i[0];
+//				endcase
+//			end
+//		end
+//	end
+//end
 
 endmodule

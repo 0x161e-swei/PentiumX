@@ -69,7 +69,7 @@ module MIO_BUS(
 	input wire [31:0] adr_i;
 	input wire we_i;
 	input wire stb_i;
-	output reg [31:0] dat_o;
+	output reg [31:0] dat_o = 0;
 	output ack_o;
 
 	//input  wire 		clk, rst, ps2_ready, mem_w, vga_rdn;
@@ -96,7 +96,7 @@ module MIO_BUS(
 
 	wire 				counter_over;
 	reg 	[31: 0] 	Cpu_data2bus, Cpu_data4bus;
-	reg					wea;
+	wire					wea;
 	//reg 				vram_write,vram;
 	//reg 				ready;
 	//reg 		[12: 0] cpu_vram_addr;
@@ -113,19 +113,15 @@ module MIO_BUS(
 	//assign vram_addr 	= ~vga_rdn? vga_addr : cpu_vram_addr;
 
 	assign ack_o = stb_i;
-	always @(posedge clk) begin
-		if(stb_i && ack_o) begin
-				if(we_i) begin //write
-					Cpu_data2bus <= dat_i;
-					wea <= 1;
-				end
-				else begin //read
-					wea <= 0;
-					dat_o <= Cpu_data4bus;
-				end
+	wire MIO_wr;
+	assign MIO_wr = stb_i && ack_o;
+	assign wea = stb_i & ack_o & we_i;
+	always @(posedge MIO_wr) begin
+		if(we_i) begin //write
+			Cpu_data2bus <= dat_i;
 		end
-		else begin
-			wea <= 0;
+		else begin //read
+			dat_o <= Cpu_data4bus;
 		end
 	end
 
@@ -143,7 +139,7 @@ module MIO_BUS(
 		//ram_data_in  				= 32'h0;
 		//vram_data_in 				= 31'h0;
 		Peripheral_in 				= 32'h0;
-		//Cpu_data4bus 				= 32'h0;
+		Cpu_data4bus 				= 32'h0;
 
 		casex(adr_i[31:8])
 			//24'h0000xx: begin // data_ram (00000000 - 0000ffff(00000ffc), actually lower 4KB RAM)

@@ -46,7 +46,8 @@ module Muliti_cycle_Cpu(
 	wire 		[31: 0] PC_Current;
 	wire 		[15: 0] imm;
 	wire 		[ 3: 0] ALU_operation;
-	wire 		[ 1: 0] RegDst, MemtoReg, ALUSrcB, PCSource, ALUSrcA;
+	wire 		[ 1: 0] RegDst, MemtoReg, ALUSrcB, ALUSrcA;
+	wire 		[ 2: 0] PCSource;
 	wire 				MemRead, MemWrite, IorD, IRWrite, RegWrite, 
 						PCWrite, PCWriteCond, Beq, data2Mem, zero, 
 						overflow, Signext;			

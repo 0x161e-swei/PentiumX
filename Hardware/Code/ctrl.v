@@ -51,8 +51,9 @@ module 		ctrl(
 	input wire 	[31: 0] Inst;		
 	input wire 			MIO_ready, zero, overflow;
 	
-	output reg 			PCWrite, PCWriteCond, IorD, MemRead, MemWrite, IRWrite, data2Mem, RegWrite, CPU_MIO, Beq, Signext;
-	output reg 	[ 1: 0]	RegDst, MemtoReg, PCSource, ALUSrcB, ALUSrcA;
+	output reg 				PCWrite, PCWriteCond, IorD, MemRead, MemWrite, IRWrite, data2Mem, RegWrite, CPU_MIO, Beq, Signext;
+	output reg 	[ 1: 0]	RegDst, MemtoReg, ALUSrcB, ALUSrcA;
+	output reg 	[ 2: 0]	PCSource;
 	output reg 	[ 3: 0]	ALU_operation;
 	output wire [ 4: 0]	state_out;
 
@@ -71,12 +72,13 @@ module 		ctrl(
 				SRL = 4'b0101, SLL 	= 4'b1000, ADDU = 4'b1001, SUBU = 4'b1010, SLTU = 4'b1011, ALU_LH = 4'b1100, ALU_SH = 4'b1101,
 				SRA = 4'b1110, ALU_LHU = 4'b1111;
 
-	`define CPU_ctrl_signals {PCWrite, PCWriteCond, IorD, MemRead, MemWrite, IRWrite, MemtoReg, PCSource, ALUSrcB, ALUSrcA[0], RegWrite, RegDst, CPU_MIO}
-							//   1         1         1       1         1        1        2         2         2        1           1        2         1
-
+	`define CPU_ctrl_signals {PCWrite, PCWriteCond, IorD, MemRead, MemWrite, IRWrite, MemtoReg, PCSource[1:0], ALUSrcB, ALUSrcA[0], RegWrite, RegDst, CPU_MIO}
+							//   1         1         1      1         1        1        2            2            2        1           1          2      1
+  
 	assign state_out = state;
 	initial begin
 		`CPU_ctrl_signals 	= 17'h12821;
+		PCSource[2]				= 0;
 		ALUSrcA[1] 			= 0;
 		data2Mem 			= 0;
 		ALU_operation  		= 3'b010;
@@ -126,7 +128,7 @@ module 		ctrl(
 							6'b101011: ALU_operation <= SLTU;
 							6'b000011: ALU_operation <= SRA;
 							6'b001000: begin 				
-								`CPU_ctrl_signals 	 <= 17'h10010;
+								`CPU_ctrl_signals 	 <= 17'h10190;
 								ALU_operation 		 <= ADD; 
 								state  				 <= EX_jr; 
 							end 
