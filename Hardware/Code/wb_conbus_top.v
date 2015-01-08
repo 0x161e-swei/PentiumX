@@ -246,8 +246,8 @@ module wb_conbus_top(
 	assign	m1_dat_o = i_dat_s;
 	assign  m1_ack_o = i_bus_s & i_gnt_arb[1];
 
-
-	assign  i_bus_s = {s0_ack_i | s1_ack_i | s2_ack_i | s3_ack_i | s4_ack_i | s5_ack_i | s6_ack_i | s7_ack_i};
+	// TODO: modify i_bus_s to fit number of slaves
+	assign  i_bus_s = {/* s0_ack_i | */s1_ack_i | s2_ack_i | s3_ack_i | s4_ack_i }; //s5_ack_i | s6_ack_i | s7_ack_i};
 
 	////////////////////////////////
 	//	Slave output interface

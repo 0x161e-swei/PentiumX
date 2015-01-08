@@ -39,7 +39,7 @@ module MIO_BUS(
 				//mem_w,
 				//key,
 				//Cpu_data2bus, 		// Data from CPU
-				//addr_bus,
+				//adr_i,
 				//vga_addr,
 				//ram_data_out,
 				//vram_out,
@@ -80,8 +80,8 @@ module MIO_BUS(
 	input  wire	[ 7: 0] SW, led_out;
 	//input  wire	[10: 0] vram_out;	
 	//input  wire	[12: 0] vga_addr;
-	//input  wire	[31: 0] Cpu_data2bus, ram_data_out, addr_bus, counter_out;
-	input  wire	[31: 0] addr_bus, counter_out;
+	//input  wire	[31: 0] Cpu_data2bus, ram_data_out, adr_i, counter_out;
+	input  wire	[31: 0] counter_out;
 
 	//output wire	[12: 0] vram_addr;	
 	//output wire			CPU_wait, vram_we;
@@ -145,10 +145,10 @@ module MIO_BUS(
 		Peripheral_in 				= 32'h0;
 		//Cpu_data4bus 				= 32'h0;
 
-		casex(addr_bus[31:8])
+		casex(adr_i[31:8])
 			//24'h0000xx: begin // data_ram (00000000 - 0000ffff(00000ffc), actually lower 4KB RAM)
 			//	data_ram_we 		= mem_w;
-			//	ram_addr 			= addr_bus[13:2];
+			//	ram_addr 			= adr_i[13:2];
 			//	ram_data_in 		= Cpu_data2bus;
 			//	Cpu_data4bus 		= ram_data_out;
 			//end
@@ -156,7 +156,7 @@ module MIO_BUS(
 			//24'h000cxx: begin // Vram (000c0000 - 000cffff(000012c0), actually lower 4800 * 11bit VRAM)
 			//	vram_write 			= mem_w;
 			//	vram 				= 1;
-			//	cpu_vram_addr 		= addr_bus[14:2];
+			//	cpu_vram_addr 		= adr_i[14:2];
 			//	vram_data_in 		= Cpu_data2bus[31:0];
 			//	Cpu_data4bus 		= vga_rdn? {21'h0, vram_out[10:0]} : 32'hx;
 			//end
@@ -174,7 +174,7 @@ module MIO_BUS(
 			end
 
 			24'hffffff: begin // LED (ffffff00-ffffffff0,8 LEDs & counter, ffffff04-fffffff4)
-				if( addr_bus[2] ) begin //ffffff04 for addr of counter
+				if( adr_i[2] ) begin //ffffff04 for addr of counter
 					counter_we 		= wea;
 					Peripheral_in 	= Cpu_data2bus; //write Counter Value
 					Cpu_data4bus 	= counter_out; //read from Counter;

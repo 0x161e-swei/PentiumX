@@ -36,12 +36,12 @@ module Mem_I_D 	(
 				//D_Out
     			);
 	//cpu_read_write		
-	input wire [31:0] dat_i;
-	input wire [32:0] adr_i;
-	input wire we_i;
-	input wire stb_i;
-	output reg [31:0] dat_o;
-	output ack_o;
+	input wire [31: 0] 	dat_i;
+	input wire [31: 0] 	adr_i;
+	input wire	 		we_i;
+	input wire 			stb_i;
+	output reg [31: 0] 	dat_o;
+	output 				ack_o;
 
 	input 				clk;
 	//input 				W_En;
@@ -59,7 +59,7 @@ module Mem_I_D 	(
 		$readmemb("../Coe/ChineseTest",RAM);
 	end
 
-	assign ack_o = stb_i;
+	assign #1 ack_o = stb_i;
 	
 	always @(posedge clk) begin
 		if(stb_i && ack_o) begin

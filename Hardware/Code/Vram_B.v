@@ -57,7 +57,7 @@ module 	Vram_B(
 	reg [10:0] addra;
 	reg wea;
 	reg [31:0] dina;
-	reg [31:0] douta;
+	wire [31:0] douta;
 	wire [10:0] vram_addr;
 	assign vram_addr = adr_i[14:2];
 	//input 				W_En;
@@ -101,7 +101,7 @@ module 	Vram_B(
 	//end
 
 
-	Vram_2 vram_2p(
+	vram_2p vram_2p(
 				//for cpu
 				.clka(clk), // input clka
 				.wea(wea), // input [0 : 0] wea
