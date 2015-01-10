@@ -82,12 +82,14 @@
     <ClCompile Include="MipsCPU.cpp" />
     <ClCompile Include="PentiumX.cpp" />
     <ClCompile Include="stdafx.cpp" />
+    <ClCompile Include="VirtualDisk.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Font16.h" />
     <ClInclude Include="MipsCPU.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
+    <ClInclude Include="VirtualDisk.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

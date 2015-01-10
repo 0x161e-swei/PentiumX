@@ -1,8 +1,10 @@
 #ifndef __MIPSCPU_H__
 #define __MIPSCPU_H__
 
+#include <string>
+#include <fstream>
 #include "stdafx.h"
-#include  "cstring"
+#include "VirtualDisk.h"
 
 typedef unsigned short UINT16;
 typedef unsigned int UINT32;
@@ -11,32 +13,58 @@ typedef unsigned char byte;
 class MipsCPU
 {
 public:
-	~MipsCPU()
-	{
-	}
-	static void getInstance();
+	~MipsCPU(){};
+	static MipsCPU* getInstance();
 	// 执行指令
 	void step();
 	// 模拟显示
 	void vgaRun();
 	// 键盘中断
-	void kbInt(byte key);
+	void kbInt(char key);
+	// 启动
+	bool Boot();
 private:
-	MipsCPU()
-	{
+	MipsCPU() {
 		memset(this, 0, sizeof(MipsCPU));
-		pc = 0;
+		pc = CODE_SEGMENT_OFFSET;
+		reg[sp] = MEMORY_SIZE;// 栈自顶向下增长
+		vhd = VirtualDisk::getInstance();
+		pc_mutex = false;
+		exception_mutex = false;
 	}
-	// 在程序启动时载入代码
+	// 写控制台
+	void WriteTerminal(int row, int col, char c);
+	// 通知vga刷新
+	void RePaint();
 public:
-	static MipsCPU* pCpu;
-	static const UINT32 REG_NUMBER = 32;
-	static const UINT32 MEMORY_SIZE = 1024*1024;
-	static const UINT32 VRAM_OFFSET = 1024*64;
-	static const UINT32 USER_OFFSET = 1024*512;
-	static const UINT32 INT_OFFSET = 0x00000004;
-	static const UINT32 VGA_WIDTH = 640;
-	static const UINT32 VGA_HEIGHT = 480;
+	static const UINT32 REG_NUMBER = 32;// 寄存器数量
+	static const UINT32 MEMORY_SIZE = 1024*1024;// 内存大小
+
+	static const UINT32 INT_OFFSET = 0;// 中断处理程序偏移
+
+	static const UINT32 CHAR_DEVICE_OFFSET = 1024*64;// 字符设备偏移
+	static const UINT32 TEXT_WIDTH = 40;// 文本宽度
+	static const UINT32 TEXT_HEIGHT = 24;// 文本高度
+
+	static const UINT32 KEYBOARD_BUFFER_OFFSET = CHAR_DEVICE_OFFSET + 4 + TEXT_WIDTH*TEXT_HEIGHT;// 键盘缓冲区偏移
+	static const UINT32 KEYBOARD_BUFFER_SIZE = 256;// 键盘缓冲区大小
+
+	static const UINT32 VGA_SIGNAL = KEYBOARD_BUFFER_OFFSET + KEYBOARD_BUFFER_SIZE;// 输出到vga的信号
+	static const UINT32 VGA_SIGNAL_SIZE = 4;// 通知VGA刷新
+
+	static const UINT32 CODE_SEGMENT_OFFSET = VGA_SIGNAL + VGA_SIGNAL_SIZE;// 代码段
+	static const UINT32 CODE_SEGMENT_SIZE = 1024*128;
+
+	static const UINT32 DATA_SEGMENT_OFFSET = CODE_SEGMENT_OFFSET + CODE_SEGMENT_SIZE;// 数据段
+
+	static const UINT32 VGA_WIDTH = 640;// VGA宽度
+	static const UINT32 VGA_HEIGHT = 480;// VGA高度
+
+	static const byte VGA_IDLE = 0;
+	static const byte VGA_OUTPUT = 1;
+	static const byte VGA_REPAINT = 2;
+	static const byte VGA_CLEAR = 3;
+
 	enum RegName{
 		zero = 0, at, v0, v1, a0, a1, a2, a3, 
 		t0, t1, t2, t3, t4, t5, t6, t7, 
@@ -45,7 +73,7 @@ public:
 	};
 	enum cp0Name{
 		BadVAddr = 8, Count = 9, Compare = 11, Status = 12,
-		Cause = 13, EPC = 14, Config = 16
+		Cause = 13, EPC = 14, Config = 16,
 	};
 	enum op{
 		Syscall = 0x0000000c,
@@ -56,11 +84,15 @@ public:
 		Iandi = 0x0c,
 		Ibeq = 0x04,
 		Ibne = 0x05,
+		Iblez = 0x06,
 		Ilh = 0x21,
 		Ilhu = 0x25,
 		Ilui = 0x0f,
 		Ilw = 0x23,
 		Iori = 0x0d,
+		Isb = 0x28,
+		Ilb = 0x20,
+		Ilbu = 0x24,
 		Ish = 0x29,
 		Islti = 0x0a,
 		Isltiu = 0x0b,
@@ -68,10 +100,11 @@ public:
 		Ixori = 0x0e,
 		Imfc0 = 0x10,
 		J = 0x02,
-		Jal = 0x03,
+		Jal = 0x03
 	};
 	enum funct{
 		Fadd = 0x20,
+		Fmovz = 0x0a,
 		Faddu = 0x21,
 		Fand = 0x24,
 		Fjalr = 0x09,
@@ -86,15 +119,24 @@ public:
 		Fsub = 0x22,
 		Fsubu = 0x23,
 		Fxor = 0x26,
-		Fsyscall = 0x0c,
+		Fsyscall = 0x0c
+	};
+	enum interrupt_cause {
+		KB_EXCEPTION = 0,
+		SYSCALL_EXCEPTION = 8,
 	};
 private:
+	UINT32 instruction;
 	UINT32 reg[REG_NUMBER];
 	UINT32 cp0[REG_NUMBER];
 	UINT32 pc;
+	byte vga_ram[VGA_HEIGHT*VGA_WIDTH];
 	byte memory[MEMORY_SIZE];
 	POINT cursor;
 	bool overflow;
+	VirtualDisk* vhd;
+	volatile bool pc_mutex;
+	volatile bool exception_mutex;
 };
 
 

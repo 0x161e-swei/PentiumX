@@ -6,26 +6,31 @@ using namespace std;
 
 HANDLE hThread[THREAD_NUM];
 
+
+
 DWORD cpuRun(LPVOID lpParam)
 {
 	DWORD exitCode = 0;
+	MipsCPU* cpu = MipsCPU::getInstance();
 	for (;;)
 	{
-		MipsCPU::pCpu->step();
+		cpu->step();
 		GetExitCodeThread(hThread[1], &exitCode);
 		if (exitCode != STILL_ACTIVE)
 		{
-			delete MipsCPU::pCpu;
+			delete cpu;
 			ExitThread(0);
 		}
+		Sleep(0);
 	}
 	return 0;
 }
 
 void display2(int value)
 {
+	MipsCPU* cpu = MipsCPU::getInstance();
 	int begin = GetTickCount64();
-	MipsCPU::pCpu->vgaRun();
+	cpu->vgaRun();
 	int end = GetTickCount64();
 	// Ã¿40ms»­Ò»´Î
 	glutTimerFunc(max(0, 40-(end-begin)), display2, NULL);
@@ -39,7 +44,8 @@ void display1()
 
 void processKey(byte key, int x, int y)
 {
-	MipsCPU::pCpu->kbInt(key);
+	MipsCPU* cpu = MipsCPU::getInstance();
+	cpu->kbInt(key);
 }
 
 void processSpecialKey(int key, int x, int y)
@@ -70,13 +76,16 @@ DWORD vga(LPVOID lpParam)
 	return 0;
 }
 
-MipsCPU* MipsCPU::pCpu = NULL;
-
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
 {
 	MipsCPU::getInstance();
 
 	//glutInit(&argc, argv);
+	MipsCPU* cpu = MipsCPU::getInstance();
+	if (cpu->Boot() == false) {
+		MessageBox(NULL, L"Boot failed", L"Warning", MB_OK);
+		return 0;
+	}
 
 	hThread[0] = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)cpuRun, 0, 0, NULL);
 	hThread[1] = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)vga, 0, 0, NULL);

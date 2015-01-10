@@ -27,6 +27,9 @@
     <ClCompile Include="Font16.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="VirtualDisk.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MipsCPU.h">
@@ -39,6 +42,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="Font16.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="VirtualDisk.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
