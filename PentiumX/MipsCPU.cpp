@@ -4,7 +4,7 @@
 #include "MipsCPU.h"
 using std::string;
 
-MipsCPU* MipsCPU::getInstance()
+MipsCPU* MipsCPU::GetInstance()
 {
 	static bool init = false;
 	static MipsCPU* cpu;
@@ -38,26 +38,93 @@ bool MipsCPU::Boot()
 
 void MipsCPU::RePaint()
 {
+	if (memory[VGA_SIGNAL] != VGA_OUTPUT) {
+		return;
+	}
+
 	for (auto i = 0; i < TEXT_HEIGHT; i++) {
 		for (auto j = 0; j < TEXT_WIDTH; j++) {
 			char temp = memory[CHAR_DEVICE_OFFSET + 2 + i*TEXT_WIDTH + j];
-			// 如果是可写字符则打印
-			if (temp >= 0x20 && temp <= 0xfe) {
-				WriteTerminal(i, j, temp);
-			}
-			else {
-				continue;
-			}
+			WriteTerminal(i, j, temp);
 		}
 	}
 	memory[VGA_SIGNAL] = VGA_IDLE;
 }
 
-void MipsCPU::step()
+void MipsCPU::FileOperation()
+{
+	//typedef struct {
+	//	unsigned int operation;
+	//	unsigned int mode;
+	//	char file_name[8];
+	//	char file_extension[4];
+	//	unsigned int read_write_head;
+	//	unsigned int file_size;
+	//	unsigned int modified_flag;
+	//	unsigned int buffer_using_flag;
+	//	unsigned int file_status;
+	//}file_info;
+
+	UINT32* file_operation = reinterpret_cast<UINT32*>(memory+FILE_BUFFER_OFFSET);
+	if (*file_operation == FILE_IDLE) {
+		return;
+	}
+
+	UINT32* file_size= reinterpret_cast<UINT32*>(memory+FILE_BUFFER_OFFSET+24);
+	UINT32* file_read_write_head = reinterpret_cast<UINT32*>(memory+FILE_BUFFER_OFFSET+20);
+	UINT32* file_status = reinterpret_cast<UINT32*>(memory+FILE_BUFFER_OFFSET+36);
+	UINT32* file_modified_flag = reinterpret_cast<UINT32*>(memory+FILE_BUFFER_OFFSET+28);
+
+	File* file;
+	VirtualDisk* pVhd = VirtualDisk::getInstance();
+	char file_name[9], file_extension[4];
+	VirtualDisk::strcpy_v(file_name,reinterpret_cast<char*>(memory+FILE_BUFFER_OFFSET+8), 8);
+	VirtualDisk::strcpy_v(file_extension, reinterpret_cast<char*>(memory+FILE_BUFFER_OFFSET+16), 3);
+	file_name[8] = file_extension[3] = '\0';
+	file = pVhd->read(string(file_name)+string(".")+string(file_extension));
+
+	UINT32 length, num;
+	switch (*reinterpret_cast<UINT32*>(memory+FILE_BUFFER_OFFSET)) {
+	case FILE_OPEN:
+		length = file->size < FILE_BUFFER_SIZE ? file->size:FILE_BUFFER_SIZE;
+		memcpy(memory+FILE_BUFFER_OFFSET+FILE_INFO_SIZE, file->content, length);
+		*file_size = file->size;
+		*file_status = FILE_NORMAL;
+		break;
+	case FILE_READ:
+		num = file->size/FILE_BUFFER_SIZE;
+		if (*file_modified_flag == 1) {
+			// 写回
+			memcpy(file->content+(num-1)*FILE_BUFFER_SIZE, memory+FILE_BUFFER_OFFSET+FILE_INFO_SIZE, FILE_BUFFER_SIZE);
+		}
+		length = file->size-num*FILE_BUFFER_SIZE < FILE_BUFFER_SIZE ? file->size-num*FILE_BUFFER_SIZE:FILE_BUFFER_SIZE;
+		// 取回新块
+		memcpy(memory+FILE_BUFFER_OFFSET+FILE_INFO_SIZE, file->content+num*FILE_BUFFER_SIZE, length);
+		break;
+	case FILE_CLOSE:
+		file->size = *file_size;
+		num = *file_read_write_head/FILE_BUFFER_SIZE;
+		// 最后一块特殊情况
+		if (file->size/FILE_BUFFER_SIZE == num) {
+			memcpy(file->content+num*FILE_BUFFER_SIZE, memory+FILE_BUFFER_OFFSET+FILE_INFO_SIZE, file->size%FILE_BUFFER_SIZE);
+		}
+		else {
+			memcpy(file->content+num*FILE_BUFFER_SIZE, memory+FILE_BUFFER_OFFSET+FILE_INFO_SIZE, FILE_BUFFER_SIZE);
+		}
+		pVhd->write(file);
+		break;
+	default:
+		break;
+	}
+	*file_operation = FILE_IDLE;
+}
+
+void MipsCPU::Step()
 {
 	RePaint();
+	FileOperation();
+
 	while(pc_mutex == true);
-	
 	pc_mutex = true;
 
 	if (pc + 4 >= MEMORY_SIZE) {
@@ -181,6 +248,11 @@ void MipsCPU::step()
 				reg[rd] = reg[rs];
 			}
 			break;
+		case Fmovn:
+			if (reg[rt] != 0) {
+				reg[rd] = reg[rs];
+			}
+			break;
 		case Fsyscall:
 			break;
 		}
@@ -300,7 +372,7 @@ void MipsCPU::step()
 	pc_mutex = false;
 }
 
-void MipsCPU::vgaRun()
+void MipsCPU::VgaRun()
 {
 	glPointSize(1.0f);
 	glBegin(GL_POINTS);
@@ -315,7 +387,7 @@ void MipsCPU::vgaRun()
 	glutSwapBuffers();
 }
 
-void MipsCPU::kbInt(char key)
+void MipsCPU::KbInt(char key)
 {
 	while (exception_mutex == true);
 	exception_mutex = true;
@@ -354,5 +426,5 @@ void MipsCPU::WriteTerminal(int row, int col, char c)
 				vga_ram[row*VGA_WIDTH * 20 + col * 16 + i*VGA_WIDTH + j] = 0x00;
 			}
 		}
-}
+	}
 }

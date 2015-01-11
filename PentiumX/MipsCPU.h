@@ -14,20 +14,20 @@ class MipsCPU
 {
 public:
 	~MipsCPU(){};
-	static MipsCPU* getInstance();
+	static MipsCPU* GetInstance();
 	// 执行指令
-	void step();
+	void Step();
 	// 模拟显示
-	void vgaRun();
+	void VgaRun();
 	// 键盘中断
-	void kbInt(char key);
+	void KbInt(char key);
 	// 启动
 	bool Boot();
 private:
 	MipsCPU() {
 		memset(this, 0, sizeof(MipsCPU));
 		pc = CODE_SEGMENT_OFFSET;
-		reg[sp] = MEMORY_SIZE;// 栈自顶向下增长
+		reg[sp] = DATA_SEGMENT_OFFSET + DATA_SEGMENT_SIZE;// 栈自顶向下增长
 		vhd = VirtualDisk::getInstance();
 		pc_mutex = false;
 		exception_mutex = false;
@@ -36,6 +36,8 @@ private:
 	void WriteTerminal(int row, int col, char c);
 	// 通知vga刷新
 	void RePaint();
+	// 操作文件
+	void FileOperation();
 public:
 	static const UINT32 REG_NUMBER = 32;// 寄存器数量
 	static const UINT32 MEMORY_SIZE = 1024*1024;// 内存大小
@@ -56,14 +58,28 @@ public:
 	static const UINT32 CODE_SEGMENT_SIZE = 1024*128;
 
 	static const UINT32 DATA_SEGMENT_OFFSET = CODE_SEGMENT_OFFSET + CODE_SEGMENT_SIZE;// 数据段
+	static const UINT32 DATA_SEGMENT_SIZE = 1024*128;
+
+	static const UINT32 FILE_BUFFER_OFFSET = DATA_SEGMENT_OFFSET + DATA_SEGMENT_SIZE;
+	static const UINT32 FILE_INFO_SIZE = 512;
+	static const UINT32 FILE_BUFFER_SIZE = 1024*4-512;
 
 	static const UINT32 VGA_WIDTH = 640;// VGA宽度
 	static const UINT32 VGA_HEIGHT = 480;// VGA高度
 
 	static const byte VGA_IDLE = 0;
 	static const byte VGA_OUTPUT = 1;
-	static const byte VGA_REPAINT = 2;
-	static const byte VGA_CLEAR = 3;
+	
+	// file operation
+	static const UINT32 FILE_IDLE = 0;
+	static const UINT32 FILE_OPEN = 13;
+	static const UINT32 FILE_READ = 14;
+	static const UINT32 FILE_WRITE = 15;
+	static const UINT32 FILE_CLOSE = 16;
+	static const UINT32 FILE_NORMAL = 0;
+	static const UINT32 FILE_ERROR = 1;
+	static const UINT32 FILE_EOF = 2;
+
 
 	enum RegName{
 		zero = 0, at, v0, v1, a0, a1, a2, a3, 
@@ -105,6 +121,7 @@ public:
 	enum funct{
 		Fadd = 0x20,
 		Fmovz = 0x0a,
+		Fmovn = 0x0b,
 		Faddu = 0x21,
 		Fand = 0x24,
 		Fjalr = 0x09,

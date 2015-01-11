@@ -8,13 +8,13 @@ HANDLE hThread[THREAD_NUM];
 
 
 
-DWORD cpuRun(LPVOID lpParam)
+DWORD CpuRun(LPVOID lpParam)
 {
 	DWORD exitCode = 0;
-	MipsCPU* cpu = MipsCPU::getInstance();
+	MipsCPU* cpu = MipsCPU::GetInstance();
 	for (;;)
 	{
-		cpu->step();
+		cpu->Step();
 		GetExitCodeThread(hThread[1], &exitCode);
 		if (exitCode != STILL_ACTIVE)
 		{
@@ -26,29 +26,30 @@ DWORD cpuRun(LPVOID lpParam)
 	return 0;
 }
 
-void display2(int value)
+void Display2(int value)
 {
-	MipsCPU* cpu = MipsCPU::getInstance();
+	MipsCPU* cpu = MipsCPU::GetInstance();
 	int begin = GetTickCount64();
-	cpu->vgaRun();
+	cpu->VgaRun();
 	int end = GetTickCount64();
 	// Ã¿40ms»­Ò»´Î
-	glutTimerFunc(max(0, 40-(end-begin)), display2, NULL);
+	glutTimerFunc(max(0, 40-(end-begin)), Display2, NULL);
 }
-void display1()
+
+void Display1()
 {	
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
-	display2(NULL);
+	Display2(NULL);
 }
 
-void processKey(byte key, int x, int y)
+void ProcessKey(byte key, int x, int y)
 {
-	MipsCPU* cpu = MipsCPU::getInstance();
-	cpu->kbInt(key);
+	MipsCPU* cpu = MipsCPU::GetInstance();
+	cpu->KbInt(key);
 }
 
-void processSpecialKey(int key, int x, int y)
+void ProcessSpecialKey(int key, int x, int y)
 {
 	switch (key)
 	{
@@ -62,15 +63,15 @@ void processSpecialKey(int key, int x, int y)
 	}
 }
 
-DWORD vga(LPVOID lpParam)
+DWORD Vga(LPVOID lpParam)
 {
 	glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE);
 	glutInitWindowPosition(100, 100);
 	glutInitWindowSize(640, 480);
 	glutCreateWindow("VGA");
-	glutDisplayFunc(display1);
-	glutKeyboardFunc(processKey);
-	glutSpecialFunc(processSpecialKey);
+	glutDisplayFunc(Display1);
+	glutKeyboardFunc(ProcessKey);
+	glutSpecialFunc(ProcessSpecialKey);
 	glutMainLoop();
 
 	return 0;
@@ -78,17 +79,17 @@ DWORD vga(LPVOID lpParam)
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
 {
-	MipsCPU::getInstance();
+	MipsCPU::GetInstance();
 
 	//glutInit(&argc, argv);
-	MipsCPU* cpu = MipsCPU::getInstance();
+	MipsCPU* cpu = MipsCPU::GetInstance();
 	if (cpu->Boot() == false) {
 		MessageBox(NULL, L"Boot failed", L"Warning", MB_OK);
 		return 0;
 	}
 
-	hThread[0] = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)cpuRun, 0, 0, NULL);
-	hThread[1] = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)vga, 0, 0, NULL);
+	hThread[0] = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)CpuRun, 0, 0, NULL);
+	hThread[1] = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)Vga, 0, 0, NULL);
 
 	WaitForMultipleObjects(THREAD_NUM, hThread, TRUE, INFINITE);
 
