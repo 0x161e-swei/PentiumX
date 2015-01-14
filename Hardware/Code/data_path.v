@@ -53,9 +53,9 @@ module data_path(
     input wire 	 		MIO_ready, IorD, RegWrite, IRWrite, PCWrite, PCWriteCond, Beq, data2Mem, Signext;
 
     input wire  [ 1: 0] RegDst, ALUSrcA, ALUSrcB, MemtoReg;
-	 input wire  [ 2: 0] PCSource;
+	input wire  [ 2: 0] PCSource;
     input wire  [ 3: 0] ALU_operation;
-	 input wire  [31: 0] data2CPU;
+	input wire  [31: 0] data2CPU;
 
     output reg  [31: 0] PC_Current; 
     output reg  [31: 0]	Inst_R = 0;
@@ -123,7 +123,23 @@ module data_path(
 					.rdata_A 			(rdata_A),
 					.rdata_B 			(rdata_B)
 					);
-		  
+
+	// Instructions as mfc0 $t1, $11
+	Coprocessor cp0(
+  					.clk(clk),
+  					.rst(reset),
+  					.c0_rd_addr(reg_Rt_addr_B),
+  					.c0_wr_addr(reg_rd_addr),
+					.c0_w_data(w_reg_data),
+					.pc_i(res),
+					.InTcause(InTcause),
+					.c0_reg_we(WriteCp0),
+					.WriteEPC(WriteEPC),
+					.WriteCause(WriteCause),
+					.c0_r_data(c0_r_data), 				// used for instructions mfc0
+					.epc_o(epc_out)
+					);
+
 	initial begin
 		 PC_Current = 32'h0000_0000;
 	end
@@ -145,6 +161,7 @@ module data_path(
 					.sel 				(MemtoReg),
 					.o 					(w_reg_data)
 					);
+
 	// reg write port addr
 	mux4to1_5 mux_w_reg_addr(
 					.a					(reg_Rt_addr_B), 		//reg addr=IR[21:16]
@@ -154,16 +171,28 @@ module data_path(
 					.sel				(RegDst),
 					.o 					(reg_Wt_addr)
 					);
- 
-	//---------------ALU path
+
+ 	//---------------ALU path
+ 	// Alu source A
+ 	always @(*) begin
+ 		case( ALUSrcA ) begin
+ 			2'b00: 	Alu_A <= PC_Current;				// PC
+ 			2'b01:  Alu_A <= rdata_A;					// reg out A
+ 			2'b10: 	Alu_A <= dataToCpu;					// Sh
+ 			2'b11: 	Alu_A <= PC_Current - 4;			// pc - 4 for syscall
+ 		end
+ 	end
+
+ 	/*
 	mux3to1_32 mux_Alu_A(
 					.a					(rdata_A), 				// reg out A
 					.b					(PC_Current),  			// PC
 					.c					(dataToCpu),  			// Sh
+					.d 					(PC_Current - 4),		// pc - 4 for syscall
 					.sel 				(ALUSrcA),
 					.o					(Alu_A)
 					);
-         
+    */     
   mux4to1_32 mux_Alu_B(
          			.a					(rdata_B), 						//reg out B
          			.b					(32'h00000004), 				//4 for PC+4
@@ -184,10 +213,11 @@ module data_path(
           	case ( PCSource )
              	3'b000: if (MIO_ready) 
              			PC_Current <= res; 												// PC+4
-              	3'b001: 	PC_Current <= ALU_Out; 											// branch
-              	3'b010: 	PC_Current <= {PC_Current[31:28],Inst_R[25:0],2'b00}; 			// jump
-              	3'b011: 	PC_Current <= res; 											// jr
-					3'b100:	;
+              	3'b001: PC_Current <= ALU_Out; 											// branch
+              	3'b010: PC_Current <= {PC_Current[31:28],Inst_R[25:0],2'b00}; 			// jump
+              	3'b011: PC_Current <= res; 												// jr and jalr
+				3'b100:	PC_Current <= 32'h0000_0004;
+				3'b101:	PC_Current <= epc_out;
           	endcase
      	end
 	end
@@ -201,5 +231,6 @@ module data_path(
          			.sel 				(IorD),
          			.o					(M_addr)
        				);
+
  
-  endmodule 
+endmodule 

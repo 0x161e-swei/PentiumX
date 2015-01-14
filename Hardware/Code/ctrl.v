@@ -43,7 +43,11 @@ module 		ctrl(
 				Beq,
 				Signext,
 				ALU_operation,
-				state_out
+				state_out,
+				WriteEPC, 
+				WriteCause, 
+				WriteCp0, 
+				InTcause
 				);
 
 
@@ -51,7 +55,9 @@ module 		ctrl(
 	input wire 	[31: 0] Inst;		
 	input wire 			MIO_ready, zero, overflow;
 	
-	output reg 				PCWrite, PCWriteCond, IorD, MemRead, MemWrite, IRWrite, data2Mem, RegWrite, CPU_MIO, Beq, Signext;
+	output reg 			PCWrite, PCWriteCond, IorD, MemRead, MemWrite, 
+						IRWrite, data2Mem, RegWrite, CPU_MIO, Beq, Signext,
+						WriteEPC, WriteCause, WriteCp0, InTcause;
 	output reg 	[ 1: 0]	RegDst, MemtoReg, ALUSrcB, ALUSrcA;
 	output reg 	[ 2: 0]	PCSource;
 	output reg 	[ 3: 0]	ALU_operation;
@@ -66,7 +72,9 @@ module 		ctrl(
 				MEM_RD_LH = 5'b10000, MEM_RD_LHU = 5'b10110, LH_ALU = 5'b10001, 
 				MEM_RD_SH = 5'b10010, SH_ALU = 5'b10011, 
 				WB_LW_SH  = 5'b10100, 
-				EX_Mem_SH = 5'b10101;
+				EX_Mem_SH = 5'b10101,
+				// EX_Jalr	  = 5'b10110,
+				EX_SYS 	  = 5'b10111;
 
 	localparam 	AND = 4'b0000, OR 	= 4'b0001, ADD 	= 4'b0010, SUB 	= 4'b0110, NOR 	= 4'b0100, SLT 	  = 4'b0111, XOR  	= 4'b0011, 
 				SRL = 4'b0101, SLL 	= 4'b1000, ADDU = 4'b1001, SUBU = 4'b1010, SLTU = 4'b1011, ALU_LH = 4'b1100, ALU_SH = 4'b1101,
@@ -78,11 +86,15 @@ module 		ctrl(
 	assign state_out = state;
 	initial begin
 		`CPU_ctrl_signals 	= 17'h12821;
-		PCSource[2]				= 0;
+		PCSource[2]			= 0;
 		ALUSrcA[1] 			= 0;
 		data2Mem 			= 0;
-		ALU_operation  		= 3'b010;
+		ALU_operation  		= 4'b010;
 		Signext				= 0;
+		WriteEPC 			= 0;
+		WriteCause 			= 0;
+		WriteCp0 			= 0;
+		InTcause 			= 0;
 	end
 
 	always @ (posedge clk or posedge reset)
@@ -90,6 +102,12 @@ module 		ctrl(
 		if (reset == 1) begin
 			`CPU_ctrl_signals 				<= 17'h12821;
 			Signext							<= 0;
+			WriteEPC 			 			<= 0;
+			WriteCause 			 			<= 0;
+			WriteCp0 						<= 0;
+			InTcause						<= 0;
+			ALUSrcA[1] 						<= 0;
+			PCSource[2] 					<= 0;
 			state 							<= IF;
 		end	
 		else begin	
@@ -107,6 +125,7 @@ module 		ctrl(
 			end
 
 			ID: begin
+				
 				case (Inst[31:26])
 					6'b000000: begin  //R type
 
@@ -127,18 +146,80 @@ module 		ctrl(
 							6'b100011: ALU_operation <= SUBU;
 							6'b101011: ALU_operation <= SLTU;
 							6'b000011: ALU_operation <= SRA;
-							6'b001000: begin 				
+							/* jr without MIO_ready as the bus should 
+							not slowdown reg access */
+							6'b001000: begin 							//	jr 
 								`CPU_ctrl_signals 	 <= 17'h10190;
 								ALU_operation 		 <= ADD; 
 								state  				 <= EX_jr; 
-							end 
+							end
+							/* jalr added here, function code to be 0x9 */							
+							6'b001001: begin
+								// MemtoReg set to 11, to store PCCurrent in $rd
+								// RegDst set to 01, select $rd, which is usually $ra
+								// PCSource set to 011, which is res(sum) of $rs and $rt, $rt = 0
+								// AlusrcA = 01, rdata_a, which is $rs
+								// AlusrcB = 00, rdata_b, which is $rt
+								`CPU_ctrl_signals 	 <= 17'h1079a;
+								ALU_operation 		 <= ADD;
+								state 				 <= EX_JAL;
+							end
+							/* syscall added here function code to be 0xc */ 
+							6'b001100: begin
+								// select PCSource as 100
+								// AluA as 11 to select PCCurrent - 4
+								// AluB as 01 to select 4
+								// Set epc to res of ALU, which is PCCurrent - 4 + 4
+								// PCSource set as 100, to be enterance of vector table
+								`CPU_ctrl_signals 	 <= 17'h10030;
+								PCSource[2] 		 <= 1;
+								ALUSrcA[1]			 <= 1;
+								ALU_operation 		 <= ADD;
+								WriteEPC 			 <= 1;
+								WriteCause 			 <= 1;
+								InTcause			 <= 1;
+								state 				 <= EX_SYS;
+							end
 							default: begin 
 								`CPU_ctrl_signals 	 <= `CPU_ctrl_signals;
 								ALU_operation 		 <= ALU_operation;
 								state 				 <= state;
 							end
 						endcase
+					end
 
+					6'b010000: begin 								// co-processor related
+						case (Inst[25:21])
+							5'b00000: begin 						// mfc0
+								
+							end
+
+							5'b00100: begin 						// mtc0 
+								
+							end	
+
+							5'b10000: begin
+								case (Inst_in[5:0])
+									6'b011000: begin
+										// Set PCSource to 101, select epc_out
+										// Set PCWrite to 1, change PCCurrent
+										PCSource[2] 	  <= 1;
+										`CPU_ctrl_signals <= 17'h10080;
+										ALU_operation	  <= ADD;
+										state <= EX_ERET;
+									end
+									default: begin
+										`CPU_ctrl_signals <= 17'h12821;
+										state <= Error;
+									end
+								endcase
+							end
+							default: begin
+								`CPU_ctrl_signals	<= 17'h12821;
+								state <= Error;
+							end
+							
+						endcase
 					end
 
 					6'b100011: begin 												//Lw
@@ -320,7 +401,8 @@ module 		ctrl(
 				state 				<= IF; 
 			end
 
-			EX_JAL: begin
+			// End cycle, jalr also implemented in this state
+			EX_JAL: begin 								
 				`CPU_ctrl_signals 	<= 17'h12821;
 				ALU_operation 		<= ADD; 
 				state 				<= IF; 
@@ -428,6 +510,23 @@ module 		ctrl(
 			WB_Lui: begin
 				`CPU_ctrl_signals 	<= 17'h12821;
 				ALU_operation 		<= ADD; 
+				state 				<= IF; 
+			end
+
+			EX_SYS: begin
+				// 
+				`CPU_ctrl_signals 	<= 17'h12821;
+				PCSource[2] 		<= 0;
+				ALUSrcA[1]			<= 0;
+				ALU_operation 		<= ADD;
+				WriteEPC 			<= 0;
+				WriteCause 			<= 0;
+				InTcause			<= 0;	
+			end
+
+			EX_ERET: begin
+				`CPU_ctrl_signals	<= 17'h12821;
+				ALU_operation		<= ADD; 
 				state 				<= IF; 
 			end
 

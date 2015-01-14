@@ -1,6 +1,6 @@
 j whatever_start
 interruptIn:
-	mfc0 	$t0, 	1			# Cause
+	mfc0 	$t0, 	$13			# Cause
 	add 	$t0,	$t0, 	$t0
 	add 	$t0,	$t0, 	$t0
 	la 		$t1, 	vectorTable
