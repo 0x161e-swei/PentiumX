@@ -78,7 +78,11 @@ module Muliti_cycle_Cpu(
  					.state_out			(state),
  					.zero				(zero),
  					.overflow 			(overflow),
- 					.Signext			(Signext)
+ 					.Signext			(Signext),
+ 					.WriteEPC			(WriteEPC), 
+					.WriteCause			(WriteCause), 
+					.WriteCp0			(WriteCp0), 
+					.sysCause			(sysCause)
  					);
 
 	data_path M2(
@@ -107,14 +111,18 @@ module Muliti_cycle_Cpu(
 					.M_addr 			(Addr_out),
 					.zero 				(zero),
 					.overflow 			(overflow),
-					.Signext			(Signext)
+					.Signext			(Signext),
+					.WriteEPC			(WriteEPC), 
+					.WriteCause			(WriteCause), 
+					.WriteCp0			(WriteCp0), 
+					.InTcause			(InTcause)
 					);
 
     
 	assign mem_w 	    = MemWrite && ~MemRead;
 	assign cpu_stb_o    = MemWrite | MemRead;			// Used for wishbone interface 
 	assign pc_out	    = PC_Current;
-	
+	assign InTcause		= {gnt, sysCause};				// TODO: to be precise
 
 
 endmodule

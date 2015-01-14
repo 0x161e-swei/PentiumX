@@ -46,14 +46,20 @@ module data_path(
                 M_addr,
 
                 zero,
-                overflow
+                overflow,
+                WriteEPC,
+                WriteCause,
+                WriteCp0,
+                InTcause
             	);
 
     input wire 			clk, reset;
-    input wire 	 		MIO_ready, IorD, RegWrite, IRWrite, PCWrite, PCWriteCond, Beq, data2Mem, Signext;
+    input wire 	 		MIO_ready, IorD, RegWrite, IRWrite, PCWrite, 
+    					PCWriteCond, Beq, data2Mem, Signext, WriteEPC, 
+    					WriteCause, WriteCp0, InTcause;
 
-    input wire  [ 1: 0] RegDst, ALUSrcA, ALUSrcB, MemtoReg;
-	input wire  [ 2: 0] PCSource;
+    input wire  [ 1: 0] RegDst, ALUSrcA, ALUSrcB;
+	input wire  [ 2: 0] PCSource, MemtoReg;
     input wire  [ 3: 0] ALU_operation;
 	input wire  [31: 0] data2CPU;
 
@@ -128,16 +134,16 @@ module data_path(
 	Coprocessor cp0(
   					.clk(clk),
   					.rst(reset),
-  					.c0_rd_addr(reg_Rt_addr_B),
-  					.c0_wr_addr(reg_rd_addr),
-					.c0_w_data(w_reg_data),
+  					.c0_rd_addr(reg_Rt_addr_B),			// mfc0 $rt, $rd, which is $rt	
+  					.c0_wr_addr(reg_rd_addr),						
+					.c0_w_data(rdata_B),				// mtc0 $rd, $rt, which is rdata_B
 					.pc_i(res),
-					.InTcause(InTcause),
+					.InTcause(InTcause),				// 
 					.c0_reg_we(WriteCp0),
 					.WriteEPC(WriteEPC),
 					.WriteCause(WriteCause),
 					.c0_r_data(c0_r_data), 				// used for instructions mfc0
-					.epc_o(epc_out)
+					.epc_o(epc_out)						// eret return epc
 					);
 
 	initial begin
@@ -153,6 +159,16 @@ module data_path(
 	assign shamt  			= Inst_R[10: 6];
  
 	// reg write data
+	always @(*) begin
+		case(MemtoReg) begin
+			3'b000:	w_reg_data <= ALU_Out;						// ALU OP
+			3'b001:	w_reg_data <= MDR;							// LW
+			3'b010:	w_reg_data <= {imm,16'h0000};				// lui
+			3'b011:	w_reg_data <= PC_Current;					// jr
+			3'b100:	w_reg_data <= c0_r_data;			 		// mfc0
+		end
+	end
+	/*
 	mux4to1_32 mux_w_reg_data(
 					.a 					(ALU_Out), 				//ALU OP
 					.b 					(MDR), 					//LW
@@ -161,6 +177,7 @@ module data_path(
 					.sel 				(MemtoReg),
 					.o 					(w_reg_data)
 					);
+	*/
 
 	// reg write port addr
 	mux4to1_5 mux_w_reg_addr(
