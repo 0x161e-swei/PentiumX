@@ -56,7 +56,7 @@ module Mem_I_D 	(
 
 
 	initial begin
-		$readmemb("../Coe/ChineseTest",RAM);
+		$readmemb("../Coe/test_uart",RAM);
 	end
 
 	assign #1 ack_o = stb_i;

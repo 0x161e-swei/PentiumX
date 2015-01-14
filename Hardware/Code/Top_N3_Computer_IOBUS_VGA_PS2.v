@@ -37,7 +37,9 @@ module Top_N3_Computer_IOBUS_VGA_PS2(
 									Green,
 									Blue,
 									HSYNC, 
-                           VSYNC
+									VSYNC,
+									uart_rx,
+									uart_tx
 									);
 
 //for wb input and output ---------------------------------------------------
@@ -141,12 +143,14 @@ module Top_N3_Computer_IOBUS_VGA_PS2(
     input               PS2_clk, PS2_Data;
 	input       [ 3: 0] BTN;
 	input       [ 7: 0] SW;
+	input				uart_rx;
 	
 	output      [ 7: 0] LED, SEGMENT;
 	output      [ 3: 0] AN_SEL;
 	output      [ 2: 0] Red, Green;
 	output      [ 1: 0] Blue;
 	output              HSYNC, VSYNC;
+	output				uart_tx;
 
     // Variable Declarations
 	wire                Clk_CPU, rst,clk_m, mem_w, data_ram_we, GPIOfffffe00_we, GPIOffffff00_we, counter_we;
@@ -391,8 +395,8 @@ module Top_N3_Computer_IOBUS_VGA_PS2(
 					.Test_data1			(counter_out), 		// counter
 					.Test_data2			(Inst), 			// Inst
 					.Test_data3			(cpu_addr), 		// cpu_addr
-					.Test_data4			(Cpu_data2bus), 	// Cpu_data2bus;
-					.Test_data5			(key_d), 			// Cpu_data4bus;
+					.Test_data4			(m0_dat_i), 	// Cpu_data2bus;
+					.Test_data5			(m0_dat_o), 			// Cpu_data4bus;
 					.Test_data6			({ps2_ready, 15'h0, ps2_key, key}),
 					//pc;
 					.disp_num			(disp_num)
@@ -453,6 +457,26 @@ module Top_N3_Computer_IOBUS_VGA_PS2(
 					.ps2_ready 			(ps2_ready),
 					.key_d      		(key_d),
 					.key 				(key)
+					);
+					
+	uart			U13(
+					//wb_input
+					.dat_i				(s0_dat_o), 
+					.adr_i				(s0_adr_o), 
+					.we_i				(s0_we_o),
+					.stb_i				(s0_stb_o),
+					//wb_output
+					.dat_o				(s0_dat_i), 				
+					.ack_o				(s0_ack_i),
+					
+					.sys_clk			(clk_m),
+					.sys_rst			(rst),
+
+					.rx_irq				(),
+					.tx_irq				(),
+
+					.uart_rx			(uart_rx),
+					.uart_tx			(uart_tx)
 					);
 
 endmodule

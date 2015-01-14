@@ -30,7 +30,9 @@ module uart_transceiver(
 
 	input [7:0] tx_data,
 	input tx_wr,
-	output reg tx_done
+	output reg tx_done,
+	output reg tx_busy,
+	output reg rx_busy
 );
 
 //-----------------------------------------------------------------
@@ -65,7 +67,7 @@ end
 //-----------------------------------------------------------------
 // UART RX Logic
 //-----------------------------------------------------------------
-reg rx_busy;
+//reg rx_busy;
 reg [3:0] rx_count16;
 reg [3:0] rx_bitcount;
 reg [7:0] rx_reg;
@@ -112,7 +114,7 @@ end
 //-----------------------------------------------------------------
 // UART TX Logic
 //-----------------------------------------------------------------
-reg tx_busy;
+//reg tx_busy;
 reg [3:0] tx_bitcount;
 reg [3:0] tx_count16;
 reg [7:0] tx_reg;
@@ -133,7 +135,7 @@ always @(posedge sys_clk) begin
 `ifdef SIMULATION
 			$display("UART: %c", tx_data);
 `endif
-		end else if(1/*enable16 && tx_busy*/) begin
+		end else if(enable16 && tx_busy) begin
 			tx_count16  <= tx_count16 + 4'd1;
 
 			if(tx_count16 == 4'd0) begin
