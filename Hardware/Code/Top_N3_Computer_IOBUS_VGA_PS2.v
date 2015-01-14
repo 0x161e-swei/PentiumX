@@ -234,7 +234,7 @@ module Top_N3_Computer_IOBUS_VGA_PS2(
 					.state              (state) 			// Test
 					);
 
-	// data RAM (2048¡Á32)
+	// data RAM (2048 * 32)
 	Mem_I_D       	U2(
 					//wb_input
 					.dat_i				(s2_dat_o), 
@@ -252,7 +252,7 @@ module Top_N3_Computer_IOBUS_VGA_PS2(
         			// .D_Out              (ram_data_out)
         			); // Addre_Bus [9 : 0] ,Data_Bus [31 : 0]
 
-	// VRAM (4800¡Á11)
+	// VRAM (4800 * 11)
 	Vram_B        	U3(
 					//wb_input
 					.dat_i				(s1_dat_o), 
