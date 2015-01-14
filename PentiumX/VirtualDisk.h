@@ -83,6 +83,10 @@ public:
 	void rename(std::string& oldName, std::string& newName);
 	/// @brief copy指令
 	void copy(std::string& oldName, std::string& newName);
+	/// @brief 读取指定段
+	void readSection(unsigned short number, char* data);
+	/// @brief 写入指定段
+	void writeSection(unsigned short number, char* data);
 
 private:
 	VirtualDisk();

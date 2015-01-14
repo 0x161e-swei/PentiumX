@@ -694,3 +694,16 @@ void VirtualDisk::copy(string& oldName, string& newName)
 		cout << "copy fails" << endl;
 	}
 }
+
+void VirtualDisk::readSection(unsigned short number, char* data)
+{
+	vhd.seekg(number*BLOCK_SIZE);
+	vhd.read(data, BLOCK_SIZE);
+}
+
+void VirtualDisk::writeSection(unsigned short number, char* data)
+{
+	vhd.seekp(number*BLOCK_SIZE);
+	vhd.write(data, BLOCK_SIZE);
+	vhd.flush();
+}

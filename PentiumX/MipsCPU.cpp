@@ -33,6 +33,14 @@ bool MipsCPU::Boot()
 	memcpy(memory, syscall_bin->content, syscall_bin->size);
 	delete syscall_bin;
 
+	File* exception_bin;
+	exception_bin = vhd->read(string("exceptio.bin"));
+	if (exception_bin == nullptr) {
+		return false;
+	}
+	memcpy(memory + EXCEPTION_OFFSET, exception_bin->content, exception_bin->size);
+	delete exception_bin;
+
 	return true;
 }
 
@@ -65,53 +73,23 @@ void MipsCPU::FileOperation()
 	//	unsigned int file_status;
 	//}file_info;
 
-	UINT32* file_operation = reinterpret_cast<UINT32*>(memory+FILE_BUFFER_OFFSET);
+	UINT32* file_operation = reinterpret_cast<UINT32*>(memory+FILE_PORT);
 	if (*file_operation == FILE_IDLE) {
 		return;
 	}
 
-	UINT32* file_size= reinterpret_cast<UINT32*>(memory+FILE_BUFFER_OFFSET+24);
-	UINT32* file_read_write_head = reinterpret_cast<UINT32*>(memory+FILE_BUFFER_OFFSET+20);
-	UINT32* file_status = reinterpret_cast<UINT32*>(memory+FILE_BUFFER_OFFSET+36);
-	UINT32* file_modified_flag = reinterpret_cast<UINT32*>(memory+FILE_BUFFER_OFFSET+28);
+	unsigned short section_number, buffer_number;
+	section_number = *reinterpret_cast<unsigned short*>(memory+FILE_PORT+4);
+	buffer_number = *reinterpret_cast<unsigned short*>(memory+FILE_PORT+6);
 
-	File* file;
 	VirtualDisk* pVhd = VirtualDisk::getInstance();
-	char file_name[9], file_extension[4];
-	VirtualDisk::strcpy_v(file_name,reinterpret_cast<char*>(memory+FILE_BUFFER_OFFSET+8), 8);
-	VirtualDisk::strcpy_v(file_extension, reinterpret_cast<char*>(memory+FILE_BUFFER_OFFSET+16), 3);
-	file_name[8] = file_extension[3] = '\0';
-	file = pVhd->read(string(file_name)+string(".")+string(file_extension));
 
-	UINT32 length, num;
-	switch (*reinterpret_cast<UINT32*>(memory+FILE_BUFFER_OFFSET)) {
-	case FILE_OPEN:
-		length = file->size < FILE_BUFFER_SIZE ? file->size:FILE_BUFFER_SIZE;
-		memcpy(memory+FILE_BUFFER_OFFSET+FILE_INFO_SIZE, file->content, length);
-		*file_size = file->size;
-		*file_status = FILE_NORMAL;
+	switch (*file_operation) {
+	case SECTION_READ:
+		pVhd->readSection(section_number, reinterpret_cast<char*>(memory+FILE_BUFFER_OFFSET+BLOCK_SIZE*buffer_number));
 		break;
-	case FILE_READ:
-		num = file->size/FILE_BUFFER_SIZE;
-		if (*file_modified_flag == 1) {
-			// 写回
-			memcpy(file->content+(num-1)*FILE_BUFFER_SIZE, memory+FILE_BUFFER_OFFSET+FILE_INFO_SIZE, FILE_BUFFER_SIZE);
-		}
-		length = file->size-num*FILE_BUFFER_SIZE < FILE_BUFFER_SIZE ? file->size-num*FILE_BUFFER_SIZE:FILE_BUFFER_SIZE;
-		// 取回新块
-		memcpy(memory+FILE_BUFFER_OFFSET+FILE_INFO_SIZE, file->content+num*FILE_BUFFER_SIZE, length);
-		break;
-	case FILE_CLOSE:
-		file->size = *file_size;
-		num = *file_read_write_head/FILE_BUFFER_SIZE;
-		// 最后一块特殊情况
-		if (file->size/FILE_BUFFER_SIZE == num) {
-			memcpy(file->content+num*FILE_BUFFER_SIZE, memory+FILE_BUFFER_OFFSET+FILE_INFO_SIZE, file->size%FILE_BUFFER_SIZE);
-		}
-		else {
-			memcpy(file->content+num*FILE_BUFFER_SIZE, memory+FILE_BUFFER_OFFSET+FILE_INFO_SIZE, FILE_BUFFER_SIZE);
-		}
-		pVhd->write(file);
+	case SECTION_WRITE:
+		pVhd->writeSection(section_number, reinterpret_cast<char*>(memory+FILE_BUFFER_OFFSET+BLOCK_SIZE*buffer_number));
 		break;
 	default:
 		break;
@@ -123,6 +101,9 @@ void MipsCPU::Step()
 {
 	RePaint();
 	FileOperation();
+	if (*reinterpret_cast<UINT32*>(memory) == 1) {
+		exit(0);
+	}
 
 	while(pc_mutex == true);
 	pc_mutex = true;
@@ -142,15 +123,6 @@ void MipsCPU::Step()
 	reg[zero] = 0;
 	overflow = false;
 	if (instruction == Eret) {
-		if (cp0[Cause] != SYSCALL_EXCEPTION) {
-			reg[a0] = memory[reg[sp]+0];
-			reg[a1] = memory[reg[sp]+4];
-			reg[a2] = memory[reg[sp]+8];
-			reg[a3] = memory[reg[sp]+12];
-			reg[v0] = memory[reg[sp]+16];
-			reg[v1] = memory[reg[sp]+20];
-			reg[sp] += 24;
-		}
 		pc = cp0[EPC];
 		cp0[Status] &= 0x1111111d;// EXL = 0
 		exception_mutex = false;
@@ -317,8 +289,8 @@ void MipsCPU::Step()
 		break;
 	case Ish:
 		destMem = reg[rs] + static_cast<int>(static_cast<short>(immediate));
-		memory[destMem] = static_cast<byte>((reg[rt] & 0x0000ff00) >> 8);
-		memory[destMem + 1] = static_cast<byte>(reg[rt] & 0x000000ff);
+		memory[destMem + 1] = static_cast<byte>((reg[rt] & 0x0000ff00) >> 8);
+		memory[destMem] = static_cast<byte>(reg[rt] & 0x000000ff);
 		break;
 	case Islti:
 		reg[rt] = static_cast<int>(reg[rs]) < static_cast<int>(static_cast<short>(immediate)) ? 1 : 0;
@@ -398,16 +370,8 @@ void MipsCPU::KbInt(char key)
 
 	while(pc_mutex == true);
 	pc_mutex = true;
-	pc = INT_OFFSET;
+	pc = EXCEPTION_OFFSET;
 	pc_mutex = false;
-	// push context
-	reg[sp] -= 24;
-	memory[reg[sp]+0] = reg[a0];
-	memory[reg[sp]+4] = reg[a1];
-	memory[reg[sp]+8] = reg[a2];
-	memory[reg[sp]+12] = reg[a3];
-	memory[reg[sp]+16] = reg[v0];
-	memory[reg[sp]+20] = reg[v1];
 }
 
 void MipsCPU::WriteTerminal(int row, int col, char c)

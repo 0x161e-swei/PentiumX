@@ -49,19 +49,6 @@ void ProcessKey(byte key, int x, int y)
 	cpu->KbInt(key);
 }
 
-void ProcessSpecialKey(int key, int x, int y)
-{
-	switch (key)
-	{
-	case GLUT_KEY_F4:
-		int mod = glutGetModifiers();
-		if (mod == GLUT_ACTIVE_ALT)
-		{
-			ExitThread(0);
-		}
-		break;// alt+F4½áÊø³ÌÐò
-	}
-}
 
 DWORD Vga(LPVOID lpParam)
 {
@@ -71,7 +58,6 @@ DWORD Vga(LPVOID lpParam)
 	glutCreateWindow("VGA");
 	glutDisplayFunc(Display1);
 	glutKeyboardFunc(ProcessKey);
-	glutSpecialFunc(ProcessSpecialKey);
 	glutMainLoop();
 
 	return 0;

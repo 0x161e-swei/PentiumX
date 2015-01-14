@@ -43,6 +43,7 @@ public:
 	static const UINT32 MEMORY_SIZE = 1024*1024;// 内存大小
 
 	static const UINT32 INT_OFFSET = 0;// 中断处理程序偏移
+	static const UINT32 EXCEPTION_OFFSET = 1024*32;// exception偏移
 
 	static const UINT32 CHAR_DEVICE_OFFSET = 1024*64;// 字符设备偏移
 	static const UINT32 TEXT_WIDTH = 40;// 文本宽度
@@ -60,9 +61,10 @@ public:
 	static const UINT32 DATA_SEGMENT_OFFSET = CODE_SEGMENT_OFFSET + CODE_SEGMENT_SIZE;// 数据段
 	static const UINT32 DATA_SEGMENT_SIZE = 1024*128;
 
-	static const UINT32 FILE_BUFFER_OFFSET = DATA_SEGMENT_OFFSET + DATA_SEGMENT_SIZE;
-	static const UINT32 FILE_INFO_SIZE = 512;
-	static const UINT32 FILE_BUFFER_SIZE = 1024*4-512;
+	static const UINT32 FILE_PORT = DATA_SEGMENT_OFFSET + DATA_SEGMENT_SIZE;
+	static const UINT32 FILE_BUFFER_OFFSET = FILE_PORT+8;
+	static const UINT32 FILE_BUFFER_SIZE = 512*8;
+	static const UINT32 FILE_INFO = FILE_BUFFER_OFFSET + FILE_BUFFER_SIZE;
 
 	static const UINT32 VGA_WIDTH = 640;// VGA宽度
 	static const UINT32 VGA_HEIGHT = 480;// VGA高度
@@ -72,13 +74,8 @@ public:
 	
 	// file operation
 	static const UINT32 FILE_IDLE = 0;
-	static const UINT32 FILE_OPEN = 13;
-	static const UINT32 FILE_READ = 14;
-	static const UINT32 FILE_WRITE = 15;
-	static const UINT32 FILE_CLOSE = 16;
-	static const UINT32 FILE_NORMAL = 0;
-	static const UINT32 FILE_ERROR = 1;
-	static const UINT32 FILE_EOF = 2;
+	static const UINT32 SECTION_READ = 1;
+	static const UINT32 SECTION_WRITE = 2;
 
 
 	enum RegName{
