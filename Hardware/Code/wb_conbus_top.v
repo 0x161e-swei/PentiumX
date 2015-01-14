@@ -115,7 +115,7 @@ module wb_conbus_top(
 	parameter			s3_addr 	= 20'hfffff;	// slave 3, MIO address
 	parameter			s4_addr 	= 20'hffffd;	// slave 4, PS2 address
 	parameter			s5_addr 	= 8'hff;		// slave 5 address, not yet in use for timer maybe
-	parameter			s6_addr 	= 8'hfe;		// slave 6 address, not yet in use for sdCard maybe
+	parameter			s6_addr 	= 8'hfc;		// slave 6 address, not yet in use for sdCard maybe
 	parameter			s7_addr 	= 8'hfd;		// slave 7 address, not yet in use
 
 
@@ -247,7 +247,7 @@ module wb_conbus_top(
 	assign  m1_ack_o = i_bus_s & i_gnt_arb[1];
 
 	// TODO: modify i_bus_s to fit number of slaves
-	assign  i_bus_s = {/* s0_ack_i | */s1_ack_i | s2_ack_i | s3_ack_i | s4_ack_i }; //s5_ack_i | s6_ack_i | s7_ack_i};
+	assign  i_bus_s = { s0_ack_i | s1_ack_i | s2_ack_i | s3_ack_i | s4_ack_i }; //s5_ack_i | s6_ack_i | s7_ack_i};
 
 	////////////////////////////////
 	//	Slave output interface
