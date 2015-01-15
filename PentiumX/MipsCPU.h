@@ -20,7 +20,7 @@ public:
 	// 模拟显示
 	void VgaRun();
 	// 键盘中断
-	void KbInt(char key);
+	void KbInt(unsigned int key);
 	// 启动
 	bool Boot();
 private:
@@ -33,7 +33,7 @@ private:
 		exception_mutex = false;
 	}
 	// 写控制台
-	void WriteTerminal(int row, int col, char c);
+	void WriteTerminal(int row, int col, unsigned char c);
 	// 通知vga刷新
 	void RePaint();
 	// 操作文件

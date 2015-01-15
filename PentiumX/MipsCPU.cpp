@@ -348,10 +348,20 @@ void MipsCPU::VgaRun()
 {
 	glPointSize(1.0f);
 	glBegin(GL_POINTS);
+	byte x,y;
+	x = *(memory+CHAR_DEVICE_OFFSET);
+	y = *(memory+CHAR_DEVICE_OFFSET+1);
 	for (auto i = 0; i < VGA_HEIGHT; i++) {
 		for (auto j = 0; j < VGA_WIDTH; j++) {
 			byte point = vga_ram[i*VGA_WIDTH + j];
-			glColor3ub(point & 0xc0, (point & 0x30) << 2, (point & 0x0c) << 4);
+
+			if ( i>=x*20+16 && i<x*20+20
+				&& j>=y*16 && j<y*16+16) {
+					glColor3ub(255, 255, 255);
+			}// cursor
+			else {
+				glColor3ub(point & 0xc0, (point & 0x30) << 2, (point & 0x0c) << 4);
+			}// chracters
 			glVertex2f((j - 320.0) / 320.0, (240 - i) / 240.0);
 		}
 	}
@@ -359,7 +369,7 @@ void MipsCPU::VgaRun()
 	glutSwapBuffers();
 }
 
-void MipsCPU::KbInt(char key)
+void MipsCPU::KbInt(unsigned int key)
 {
 	while (exception_mutex == true);
 	exception_mutex = true;
@@ -374,7 +384,7 @@ void MipsCPU::KbInt(char key)
 	pc_mutex = false;
 }
 
-void MipsCPU::WriteTerminal(int row, int col, char c)
+void MipsCPU::WriteTerminal(int row, int col, unsigned char c)
 {
 	for (auto i = 0; i < 20; i++) {
 		for (auto j = 0; j < 16; j++) {

@@ -49,6 +49,28 @@ void ProcessKey(byte key, int x, int y)
 	cpu->KbInt(key);
 }
 
+void ProcessSpecialKey(int key, int x, int y)
+{
+	MipsCPU* cpu = MipsCPU::GetInstance();
+	switch (key) {
+	case GLUT_KEY_UP:
+		key = 0xff01;
+		break;
+	case GLUT_KEY_DOWN:
+		key = 0xff02;
+		break;
+	case GLUT_KEY_LEFT:
+		key = 0xff03;
+		break;
+	case GLUT_KEY_RIGHT:
+		key = 0xff04;
+		break;
+	default:
+		return;
+	}
+	cpu->KbInt(key);
+}
+
 
 DWORD Vga(LPVOID lpParam)
 {
@@ -58,6 +80,7 @@ DWORD Vga(LPVOID lpParam)
 	glutCreateWindow("VGA");
 	glutDisplayFunc(Display1);
 	glutKeyboardFunc(ProcessKey);
+	glutSpecialFunc(ProcessSpecialKey);
 	glutMainLoop();
 
 	return 0;
