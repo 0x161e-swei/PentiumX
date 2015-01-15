@@ -37,7 +37,8 @@ module uart #(
 	output tx_irq,
 
 	input uart_rx,
-	output uart_tx
+	output uart_tx,
+	input rx_iack
 );
 
 reg [15:0] divisor;
@@ -106,7 +107,7 @@ always @(posedge sys_clk) begin
 	else fifo_rd_once = 0;
 end
 
-assign rx_irq = full_rx;
+assign rx_irq = full_rx & ~rx_iack;
 
 uart_fifo fifo_rx (
   .clk(sys_clk), // input clk

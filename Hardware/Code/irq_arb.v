@@ -61,7 +61,7 @@ module irq_arb(
 	input				rst;
 	input	[`irqNum - 1: 0]		
 						req;		// Req input
-	output	[`irqNum - 1: 0]		
+	output	[`irqBit - 1: 0]		
 						gnt; 		// Grant output
 	//input		next;		// Next Target
 
@@ -74,7 +74,7 @@ module irq_arb(
 	parameter	      	grant0 = `irqBit'h0,
 	                	grant1 = `irqBit'h1,
 	                	grant2 = `irqBit'h2,
-	                	grant3 = `irqBit'h3,
+	                	grant3 = `irqBit'h3;
 	                	// grant4 = `irqBit'h4;
 	                	// grant5 = `irqBit'h5;
 	            

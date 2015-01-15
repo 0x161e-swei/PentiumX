@@ -1,4 +1,5 @@
-j whatever_start
+.text
+	j 		main
 interruptIn:
 	mfc0 	$t0, 	$13			# Cause
 	add 	$t0,	$t0, 	$t0
@@ -6,8 +7,12 @@ interruptIn:
 	la 		$t1, 	vectorTable
 	add 	$t0, 	$t0, 	$t1
 	jr		$t0
-
-VectorTable:
+	add 	$zero, 	$zero, 	$zero
+	add 	$zero, 	$zero, 	$zero
+	add 	$zero, 	$zero, 	$zero
+	add 	$zero, 	$zero, 	$zero
+vectorTable:
+	add 	$zero, 	$zero, 	$zero
 	j 		syscall_I
 	j 		keyboard_I
 
@@ -32,15 +37,33 @@ keyboard_I:
 
 printChar:
 	# push	
-	la 		$t0, 	ScreenBase					# macro
-	lw 		$t1,	ScreenAddr					# global screen address
+	lui 	$t0, 	0x000c 						# vram
+	# lw 		$t1,	ScreenAddr					# global screen address
+	add 	$t1, 	$zero, 	8
 	add 	$t0,	$t0,	$t1
-	sh 		$a0,	0($t0)						# lower 16bits valid
+	sw 		$a0,	0($t0)						# lower 16bits valid
 	addi 	$t1, 	$t1,	1
+	# sw 		$t1, 	ScreenAddr
 	eret
 
 serialRead:
-	
- 	
-
+serialWrite:
+clearScreen:
+rollUp:
+	add 	$zero, 	$zero,	$zero
+	add 	$zero, 	$zero, 	$zero
+	add 	$zero, 	$zero, 	$zero
+	add 	$zero, 	$zero, 	$zero
+	add 	$zero, 	$zero, 	$zero
+	eret		
+ 
+ main:
+ 	add 	$v0, 	$zero, 	$zero
+ 	addi 	$a0,	$zero, 	0x761
+ 	syscall
+ 	add 	$zero, 	$zero, 	$zero
+	add 	$zero, 	$zero, 	$zero
+	add 	$zero, 	$zero, 	$zero
+	add 	$zero, 	$zero, 	$zero
+ 	j 		main
 

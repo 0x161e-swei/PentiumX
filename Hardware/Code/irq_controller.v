@@ -56,7 +56,8 @@
 
 module irq_controller(
 	clk_i, rst_i,
-
+    i_gnt_arb,
+    intrrupt_en,
 	// Master 0 Interface
 	m0_irq_o, m0_Iack_i,
 
@@ -82,7 +83,7 @@ module irq_controller(
 	d6_irq_i, d6_Iack_o,
 
 	// Device 7 Interface
-	d7_irq_i, d7_Iack_o,
+	d7_irq_i, d7_Iack_o
 );
 
 	////////////////////////////////////////////////////////////////////
@@ -93,6 +94,7 @@ module irq_controller(
 	input				clk_i, rst_i;
 	output wire	[`irqNum - 1: 0]	
 						i_gnt_arb;
+	input wire  		intrrupt_en;
 
 	// Master 0 Interface
 	input				m0_Iack_i;
@@ -170,7 +172,7 @@ module irq_controller(
 	//
 	// slave1
 
-	assign	m0_irq_o = i_bus_irq;
+	assign	m0_irq_o = i_bus_irq & intrrupt_en;
 
 
 	///////////////////////////////////////

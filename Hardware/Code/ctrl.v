@@ -48,7 +48,9 @@ module 		ctrl(
 				WriteEPC, 
 				WriteCause, 
 				WriteCp0, 
-				sysCause
+				sysCause,
+                WriteIen,
+                Int_en
 				);
 
 
@@ -60,11 +62,11 @@ module 		ctrl(
 						IRWrite, data2Mem, RegWrite, CPU_MIO, Beq, Signext,
 						WriteEPC, WriteCause, WriteCp0, sysCause, WriteIen, 
 						Int_en;
-	output reg 	[ 1: 0]	RegDst, ALUSrcB, ALUSrcA;
-	output reg 	[ 2: 0]	PCSource, MemtoReg;
-	output reg 	[ 3: 0]	ALU_operation;
+	output reg 	[ 1: 0]	RegDst = 0, ALUSrcB = 0, ALUSrcA = 0;
+	output reg 	[ 2: 0]	PCSource = 0, MemtoReg = 0;
+	output reg 	[ 3: 0]	ALU_operation = 0;
 	output wire [ 4: 0]	state_out;
-	output wire 		Iack;
+	output reg 		    Iack;
 
 	reg [4:0] state = 5'b00000;
 
@@ -85,12 +87,14 @@ module 		ctrl(
 				SRL = 4'b0101, SLL 	= 4'b1000, ADDU = 4'b1001, SUBU = 4'b1010, SLTU = 4'b1011, ALU_LH = 4'b1100, ALU_SH = 4'b1101,
 				SRA = 4'b1110, ALU_LHU = 4'b1111;
 
-	`define CPU_ctrl_signals {PCWrite, PCWriteCond, IorD, MemRead, MemWrite, IRWrite, MemtoReg, PCSource[1:0], ALUSrcB, ALUSrcA[0], RegWrite, RegDst, CPU_MIO}
+	`define CPU_ctrl_signals {PCWrite, PCWriteCond, IorD, MemRead, MemWrite, IRWrite, MemtoReg[1:0], PCSource[1:0], ALUSrcB, ALUSrcA[0], RegWrite, RegDst, CPU_MIO}
 							//   1         1         1      1         1        1        2            2            2        1           1          2      1
   
 	assign state_out = state;
+	
 	initial begin
 		`CPU_ctrl_signals 	= 17'h12821;
+		MemtoReg[2] 		= 0;
 		PCSource[2]			= 0;
 		ALUSrcA[1] 			= 0;
 		data2Mem 			= 0;
@@ -99,7 +103,7 @@ module 		ctrl(
 		WriteEPC 			= 0;
 		WriteCause 			= 0;
 		WriteCp0 			= 0;
-		InTcause 			= 0;
+		sysCause 			= 0;
 	end
 
 	always @ (posedge clk or posedge reset)
@@ -117,16 +121,19 @@ module 		ctrl(
 			state 							<= IF;
 		end	
 		else begin	
-			case (state)
 			Iack							<= 0;
 			Signext							<= 0;
 			WriteEPC 			 			<= 0;
 			WriteCause 			 			<= 0;
 			WriteCp0 						<= 0;
+			WriteIen 						<= 0;
+			Int_en 							<= 0;
 			sysCause						<= 0;
 			ALUSrcA[1] 						<= 0;
 			PCSource[2] 					<= 0;
 			MemtoReg[2] 					<= 0;
+			`CPU_ctrl_signals 				<= 17'h12821;
+			case (state)			
 			IF: begin	
 				if(MIO_ready)begin	
 					`CPU_ctrl_signals 		<= 17'h00060;
@@ -184,6 +191,7 @@ module 		ctrl(
 								ALU_operation 		 <= ADD; 
 								state  				 <= EX_jr; 
 							end
+
 							/* jalr added here, function code to be 0x9 */							
 							6'b001001: begin
 								// MemtoReg set to 11, to store PCCurrent in $rd
@@ -195,6 +203,7 @@ module 		ctrl(
 								ALU_operation 		 <= ADD;
 								state 				 <= EX_JAL;
 							end
+
 							/* syscall added here function code to be 0xc */ 
 							6'b001100: begin
 								// select PCSource as 100
@@ -203,12 +212,15 @@ module 		ctrl(
 								// AluB as 01 to select 4
 								// Set epc to res of ALU, which is PCCurrent - 4 + 4
 								// PCSource set as 100, to be enterance of vector table
+								// Set WriteIen as 1, Int_en as 0, to disable int
 								`CPU_ctrl_signals 	 <= 17'h10030;
 								PCSource[2] 		 <= 1;
 								ALUSrcA[1]			 <= 1;
 								ALU_operation 		 <= ADD;
 								WriteEPC 			 <= 1;
 								WriteCause 			 <= 1;
+								WriteIen   			 <= 1;
+								Int_en 				 <= 0;
 								sysCause			 <= 1;
 								state 				 <= EX_SYS;
 							end
@@ -224,10 +236,10 @@ module 		ctrl(
 						case (Inst[25:21])
 							5'b00000: begin 							// mfc0 $rt, $rd
 								// Enable regWrite
-								// set RegDst to 01, select $rd
+								// set RegDst to 00, select $rt 	move rd in cp0 to rt in cpu
 								// set MemtoReg to 100, select c0_r_data from co-processor0
 								MemtoReg[2] 	  	 <= 1;
-								`CPU_ctrl_signals 	 <= 17'h0000a;
+								`CPU_ctrl_signals 	 <= 17'h00008;
 								ALU_operation	  	 <= ADD;
 								state 				 <= EX_CP0;
 							end
@@ -242,11 +254,16 @@ module 		ctrl(
 							end	
 
 							5'b10000: begin
-								case (Inst_in[5:0])
+								case (Inst[5:0])
 									6'b011000: begin 					// eret 
 										// Set PCSource to 101, select epc_out
 										// Set PCWrite to 1, change PCCurrent
+										// Set WriteIen as 1, Int_en 1, to enable INT
+										WriteIen 		  <= 1;
+										Int_en   		  <= 1;
 										PCSource[2] 	  <= 1;
+										WriteCause 		  <= 1;
+										sysCause  		  <= 0;
 										`CPU_ctrl_signals <= 17'h10080;
 										ALU_operation	  <= ADD;
 										state 			  <= EX_ERET;

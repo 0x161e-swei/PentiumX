@@ -50,33 +50,39 @@ module data_path(
                 WriteEPC,
                 WriteCause,
                 WriteCp0,
-                InTcause
+                InTcause,
+                WriteIen,
+                Int_en,
+                intrrupt_en_o
             	);
 
     input wire 			clk, reset;
     input wire 	 		MIO_ready, IorD, RegWrite, IRWrite, PCWrite, 
     					PCWriteCond, Beq, data2Mem, Signext, WriteEPC, 
-    					WriteCause, WriteCp0, InTcause;
+    					WriteCause, WriteCp0, WriteIen, Int_en;
 
     input wire  [ 1: 0] RegDst, ALUSrcA, ALUSrcB;
 	input wire  [ 2: 0] PCSource, MemtoReg;
     input wire  [ 3: 0] ALU_operation;
+    input wire  [ 4: 0] InTcause;
 	input wire  [31: 0] data2CPU;
 
     output reg  [31: 0] PC_Current; 
     output reg  [31: 0]	Inst_R = 0;
     output wire [31: 0]	data_out;
     output wire [31: 0]	M_addr;
-    output wire 		zero, overflow;
+    output wire 		zero, overflow, intrrupt_en_o;
 
 
 	reg  		[31: 0] ALU_Out = 32'h0, MDR = 32'h0, ALU_Out2 = 32'h0;
 	wire 		[31: 0] reg_outA, reg_outB, r6out; //regs
-
+    wire        [31: 0] epc_out, c0_r_data;
 	wire 				modificative;
 	//ALU
-	wire 		[31: 0] Alu_A,Alu_B,res;
-	wire 		[31: 0] w_reg_data, rdata_A, rdata_B;
+	wire 		[31: 0] Alu_B, res;
+    reg         [31: 0] Alu_A;
+	wire 		[31: 0] rdata_A, rdata_B;
+    reg         [31: 0] w_reg_data;
 	wire 		[15: 0] imm;
 	wire        [31: 0] imm_ext;
 	wire 		[ 4: 0] shamt;
@@ -132,18 +138,21 @@ module data_path(
 
 	// Instructions as mfc0 $t1, $11
 	Coprocessor cp0(
-  					.clk(clk),
-  					.rst(reset),
-  					.c0_rd_addr(reg_Rt_addr_B),			// mfc0 $rt, $rd, which is $rt	
-  					.c0_wr_addr(reg_rd_addr),						
-					.c0_w_data(rdata_B),				// mtc0 $rd, $rt, which is rdata_B
-					.pc_i(res),
-					.InTcause(InTcause),				// 
-					.c0_reg_we(WriteCp0),
-					.WriteEPC(WriteEPC),
-					.WriteCause(WriteCause),
-					.c0_r_data(c0_r_data), 				// used for instructions mfc0
-					.epc_o(epc_out)						// eret return epc
+  					.clk				(clk),
+  					.rst				(reset),
+  					.c0_rd_addr			(reg_rd_addr),			// mfc0 $rt, $rd, which is $rt	
+  					.c0_wr_addr			(reg_rd_addr),						
+					.c0_w_data			(rdata_B),					// mtc0 $rd, $rt, which is rdata_B
+					.pc_i				(res),
+					.InTcause			(InTcause),					// 
+					.c0_reg_we			(WriteCp0),
+					.WriteEPC			(WriteEPC),
+					.WriteCause			(WriteCause),
+					.WriteInt			(WriteInt),
+					.Int_en_i			(Int_en),
+					.Int_en_o			(intrrupt_en_o),
+					.c0_r_data			(c0_r_data), 				// used for instructions mfc0
+					.epc_o				(epc_out)					// eret return epc
 					);
 
 	initial begin
@@ -160,13 +169,13 @@ module data_path(
  
 	// reg write data
 	always @(*) begin
-		case(MemtoReg) begin
+		case(MemtoReg)
 			3'b000:	w_reg_data <= ALU_Out;						// ALU OP
 			3'b001:	w_reg_data <= MDR;							// LW
 			3'b010:	w_reg_data <= {imm,16'h0000};				// lui
 			3'b011:	w_reg_data <= PC_Current;					// jr
 			3'b100:	w_reg_data <= c0_r_data;			 		// mfc0
-		end
+		endcase
 	end
 	/*
 	mux4to1_32 mux_w_reg_data(
@@ -192,12 +201,12 @@ module data_path(
  	//---------------ALU path
  	// Alu source A
  	always @(*) begin
- 		case( ALUSrcA ) begin
+ 		case( ALUSrcA ) 
  			2'b00: 	Alu_A <= PC_Current;				// PC
  			2'b01:  Alu_A <= rdata_A;					// reg out A
  			2'b10: 	Alu_A <= dataToCpu;					// Sh
  			2'b11: 	Alu_A <= PC_Current - 4;			// pc - 4 for syscall
- 		end
+ 		endcase 
  	end
 
  	/*

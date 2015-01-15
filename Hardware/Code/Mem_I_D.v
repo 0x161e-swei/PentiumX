@@ -29,7 +29,7 @@ module Mem_I_D 	(
 				dat_o, 				
 				ack_o,
 
-				clk,
+				clk
 				//W_En,
 				//Addr,
 				//D_In,
@@ -56,7 +56,7 @@ module Mem_I_D 	(
 
 
 	initial begin
-		$readmemb("../Coe/test_uart",RAM);
+		$readmemh("../Coe/testsyscall.coe",RAM);
 	end
 
 	assign #1 ack_o = stb_i;

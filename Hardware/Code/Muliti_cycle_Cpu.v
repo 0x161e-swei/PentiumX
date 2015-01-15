@@ -33,31 +33,33 @@ module Muliti_cycle_Cpu(
 						data_out,						
 						CPU_MIO,
 						state,
-                        cpu_stb_o
+                        cpu_stb_o,
+                        intrrupt_en_o
 						);
 
 	input wire 			clk, reset, MIO_ready;
     input wire 	[31: 0]	data_in;	
-    input wire 	[ 4: 0] gntInt;							// INT grant
+    input wire 	[ 3: 0] gntInt;							// INT grant
     input wire 			Ireq;							// INT request
 	
     output wire [31: 0] pc_out, Inst;	//test
 	output wire [31: 0] Addr_out, data_out;						
 	output wire [ 4: 0] state;
 	output wire 		mem_w, CPU_MIO;	
-    output wire         cpu_stb_o, Iack;				// Bus requset and 
+    output wire         cpu_stb_o, Iack, intrrupt_en_o;	// Bus requset and 
     													// Interrupt acknowlegement
 
 	wire 		[31: 0] PC_Current;
 	wire 		[15: 0] imm;
-	wire 		[ 5: 0] InTcause;						// Int cause, either syscall or INT
+	wire 		[ 4: 0] InTcause;						// Int cause, either syscall or INT
 	wire 		[ 3: 0] ALU_operation;
-	wire 		[ 1: 0] RegDst, MemtoReg, ALUSrcB, ALUSrcA;
+	wire 		[ 1: 0] RegDst, ALUSrcB, ALUSrcA;
+    wire        [ 2: 0] MemtoReg;
 	wire 		[ 2: 0] PCSource;
 	wire 				MemRead, MemWrite, IorD, IRWrite, RegWrite, 
 						PCWrite, PCWriteCond, Beq, data2Mem, zero, 
 						overflow, Signext, WriteEPC, WriteCause, 
-						WriteCp0, sysCause;			
+						WriteCp0, sysCause, WriteInt, Int_enm;			
 
 
 
@@ -91,10 +93,12 @@ module Muliti_cycle_Cpu(
  					.WriteEPC			(WriteEPC), 
 					.WriteCause			(WriteCause), 
 					.WriteCp0			(WriteCp0), 
-					.sysCause			(sysCause)
+					.sysCause			(sysCause),
+					.WriteIen 			(WriteIen),
+					.Int_en 			(Int_en)
  					);
 
- 		assign InTcause		= {gntInt, sysCause};				// TODO: to be precise
+ 		assign InTcause		= {gntInt & {4{Ireq}}, sysCause};				// TODO: to be precise
 
 	data_path M2(
 					.clk 				(clk),
@@ -126,7 +130,10 @@ module Muliti_cycle_Cpu(
 					.WriteEPC			(WriteEPC), 
 					.WriteCause			(WriteCause), 
 					.WriteCp0			(WriteCp0), 
-					.InTcause			(InTcause)
+					.InTcause			(InTcause),
+					.WriteIen 			(WriteIen),
+					.Int_en				(Int_en),
+					.intrrupt_en_o 		(intrrupt_en_o)
 					);
 
     
