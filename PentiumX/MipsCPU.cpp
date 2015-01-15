@@ -340,7 +340,7 @@ void MipsCPU::Step()
 		break;
 	}
 	reg[zero] = 0;
-	
+
 	pc_mutex = false;
 }
 
@@ -371,7 +371,17 @@ void MipsCPU::VgaRun()
 
 void MipsCPU::KbInt(unsigned int key)
 {
-	while (exception_mutex == true);
+	int begin = GetTickCount64();
+	int end;
+	// ·ÀÖ¹ËÀËø
+	while (exception_mutex == true) {
+		end = GetTickCount64();
+		if (end - begin > 1000) {
+			exception_mutex = false;
+			pc_mutex = false;
+			return;
+		}
+	}
 	exception_mutex = true;
 	cp0[Cause] = KB_EXCEPTION;
 	cp0[Status] |= 0x1111111d;// EXL =1
