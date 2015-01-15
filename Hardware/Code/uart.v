@@ -158,7 +158,7 @@ assign rx_wr = stb_i & ack_o & ~we_i & (adr_i[1:0] == 2'b00) & ~empty_rx;
 
 parameter default_divisor = clk_freq/baud/16;
 
-assign ack_o = stb_i ;//& ((we_i&~full_tx) | (~we_i&~empty_rx));
+assign ack_o = stb_i & (we_i?~full_tx:1) ;//& ((we_i&~full_tx) | (~we_i&~empty_rx));
 
 assign uart_wr = stb_i && ack_o;
 
