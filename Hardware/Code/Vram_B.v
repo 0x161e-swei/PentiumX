@@ -74,7 +74,7 @@ module 	Vram_B(
 	end
 	*/
 
-	assign ack_o = stb_i;
+	assign ack_o = stb_i & (vga_addr != vram_addr); // for two port read and write
 	//wire vram_wr;
 	//assign vram_wr = stb_i & ack_o;
 	assign wea =  stb_i & ack_o & we_i;
