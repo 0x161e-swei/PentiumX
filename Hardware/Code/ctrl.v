@@ -24,8 +24,9 @@ module 		ctrl(
 				Inst,		
 				MIO_ready,	
 				zero,			
-				overflow,		
-				
+				overflow,
+				Ireq,
+				Iack,				
 				PCWrite,
 				PCWriteCond,
 				IorD,
@@ -53,15 +54,17 @@ module 		ctrl(
 
 	input wire 			clk, reset;
 	input wire 	[31: 0] Inst;		
-	input wire 			MIO_ready, zero, overflow;
+	input wire 			MIO_ready, zero, overflow, Ireq;
 	
 	output reg 			PCWrite, PCWriteCond, IorD, MemRead, MemWrite, 
 						IRWrite, data2Mem, RegWrite, CPU_MIO, Beq, Signext,
-						WriteEPC, WriteCause, WriteCp0, sysCause;
+						WriteEPC, WriteCause, WriteCp0, sysCause, WriteIen, 
+						Int_en;
 	output reg 	[ 1: 0]	RegDst, ALUSrcB, ALUSrcA;
 	output reg 	[ 2: 0]	PCSource, MemtoReg;
 	output reg 	[ 3: 0]	ALU_operation;
 	output wire [ 4: 0]	state_out;
+	output wire 		Iack;
 
 	reg [4:0] state = 5'b00000;
 
@@ -219,7 +222,7 @@ module 		ctrl(
 
 					6'b010000: begin 								// co-processor related
 						case (Inst[25:21])
-							5'b00000: begin 						// mfc0 $rt, $rd
+							5'b00000: begin 							// mfc0 $rt, $rd
 								// Enable regWrite
 								// set RegDst to 01, select $rd
 								// set MemtoReg to 100, select c0_r_data from co-processor0
@@ -229,7 +232,7 @@ module 		ctrl(
 								state 				 <= EX_CP0;
 							end
 
-							5'b00100: begin 						// mtc0 $rd, $rt
+							5'b00100: begin 							// mtc0 $rd, $rt
 								// only WriteCp0 to set 1
 								// No other write operation
 								WriteCp0 			 <= 1;					
@@ -240,7 +243,7 @@ module 		ctrl(
 
 							5'b10000: begin
 								case (Inst_in[5:0])
-									6'b011000: begin
+									6'b011000: begin 					// eret 
 										// Set PCSource to 101, select epc_out
 										// Set PCWrite to 1, change PCCurrent
 										PCSource[2] 	  <= 1;

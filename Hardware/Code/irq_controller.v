@@ -6,6 +6,7 @@
 ////  Author: Johny Chi			                         		 ////
 ////          chisuhua@yahoo.com.cn                              ////
 ////          skar.Wei                                           ////
+////          Just-CJ                                            ////
 ////                                                             ////
 ////                                                             ////
 //// 															 ////
@@ -13,6 +14,7 @@
 ////                                                             ////
 //// Copyright (C) 2000 Authors and OPENCORES.ORG                ////
 //// Copyright (C) 2014-2015 	skar.Wei<dtsps.skar@gmail.com>   ////
+//// Copyright (C) 2015 	Just-CJ<black_void_s@hotmail.com> 	 ////
 ////                                                             ////
 //// This source file may be used and distributed without        ////
 //// restriction provided that this copyright statement is not   ////
@@ -50,37 +52,37 @@
 
 
 //`define 		WB_USE_TRISTATE
+`include "irq_controller_defines.v"
 
-
-module wb_conbus_top(
+module irq_controller(
 	clk_i, rst_i,
 
 	// Master 0 Interface
-	m0_irq_o, m0_ack_i,
+	m0_irq_o, m0_Iack_i,
 
 	// Device 0 Interface
-	d0_irq_i, d0_ack_o,
+	d0_irq_i, d0_Iack_o,
 
 	// Device 1 Interface
-	d1_irq_i, d1_ack_o,
+	d1_irq_i, d1_Iack_o,
 
 	// Device 2 Interface
-	d2_irq_i, d2_ack_o,
+	d2_irq_i, d2_Iack_o,
 
 	// Device 3 Interface
-	d3_irq_i, d3_ack_o,
+	d3_irq_i, d3_Iack_o,
 
 	// Device 4 Interface
-	d4_irq_i, d4_ack_o,
+	d4_irq_i, d4_Iack_o,
 
 	// Device 5 Interface
-	d5_irq_i, d5_ack_o,
+	d5_irq_i, d5_Iack_o,
 
 	// Device 6 Interface
-	d6_irq_i, d6_ack_o,
+	d6_irq_i, d6_Iack_o,
 
 	// Device 7 Interface
-	d7_irq_i, d7_ack_o,
+	d7_irq_i, d7_Iack_o,
 );
 
 	////////////////////////////////////////////////////////////////////
@@ -89,43 +91,45 @@ module wb_conbus_top(
 	//
 
 	input				clk_i, rst_i;
+	output wire	[`irqNum - 1: 0]	
+						i_gnt_arb;
 
 	// Master 0 Interface
-	input				m0_ack_i;
+	input				m0_Iack_i;
 	output				m0_irq_o;
 
 	// Slave 0 Interface
 	input				d0_irq_i;
-	output				d0_ack_o;
+	output				d0_Iack_o;
 
 	// Slave 1 Interface
 	input				d1_irq_i;
-	output				d1_ack_o;
+	output				d1_Iack_o;
 
 	// Slave 2 Interface
 	input				d2_irq_i;
-	output				d2_ack_o;
+	output				d2_Iack_o;
 
 	// Slave 3 Interface
 	input				d3_irq_i;
-	output				d3_ack_o;
+	output				d3_Iack_o;
 
 	// Slave 4 Interface
 	input				d4_irq_i;
-	output				d4_ack_o;
+	output				d4_Iack_o;
 
 	// Slave 5 Interface
 	input				d5_irq_i;
-	output				d5_ack_o;
+	output				d5_Iack_o;
 
 	// Slave 6 Interface
 	input				d6_irq_i;
-	output				d6_ack_o;
+	output				d6_Iack_o;
 
 
 	// Slave 7 Interface
 	input				d7_irq_i;
-	output				d7_ack_o;
+	output				d7_Iack_o;
 
 
 	////////////////////////////////////////////////////////////////////
@@ -133,8 +137,9 @@ module wb_conbus_top(
 	// Local wires
 	//
 
-	wire	[	5:	0]	i_gnt_arb;
-	wire	[	2:	0]	gnt;
+	
+	wire		[`irqBit - 1: 0]	
+						gnt;
 	reg					i_bus_irq;		// internal share bus, master data and control to slave
 	wire				i_bus_ack;		// internal share bus , slave control to master
 
@@ -146,20 +151,19 @@ module wb_conbus_top(
 	//
 
 	// devices
-	assign  d0_ack_o = i_bus_ack & i_gnt_arb[0];
+	assign  d0_Iack_o = i_bus_ack & i_gnt_arb[0];
 
-	assign  d1_ack_o = i_bus_ack & i_gnt_arb[1];
+	assign  d1_Iack_o = i_bus_ack & i_gnt_arb[1];
 
-	assign  d2_ack_o = i_bus_ack & i_gnt_arb[2];
+	assign  d2_Iack_o = i_bus_ack & i_gnt_arb[2];
 
-	assign  d3_ack_o = i_bus_ack & i_gnt_arb[3];
+	assign  d3_Iack_o = i_bus_ack & i_gnt_arb[3];
 
-	assign  d4_ack_o = i_bus_ack & i_gnt_arb[4];
 
 
 
 	// TODO: modify i_bus_s to fit number of slaves
-	assign  i_bus_ack = { m0_ack_i }; //s5_ack_i | s6_ack_i | s7_ack_i};
+	assign  i_bus_ack = { m0_Iack_i }; //s5_Iack_i | s6_Iack_i | s7_Iack_i};
 
 	////////////////////////////////
 	//	Slave output interface
@@ -177,34 +181,30 @@ module wb_conbus_top(
 		d0_irq_i,
 		d1_irq_i,
 		d2_irq_i,
-		d3_irq_i,
-		d4_irq_i)
+		d3_irq_i)
 	begin	  
 		case(gnt)
-			3'h0:	i_bus_irq = d0_irq_i;
-			3'h1:	i_bus_irq = d1_irq_i;
-			3'h2:	i_bus_irq = d2_irq_i;
-			3'h3:	i_bus_irq = d3_irq_i;
-			3'h4:	i_bus_irq = d4_irq_i;
-			default:i_bus_irq =  0;	//{m0_adr_i, m0_sel_i, m0_dat_i, m0_we_i, m0_cab_i, m0_cyc_i,m0_stb_i};
+			`irqBit'h0:	i_bus_irq = d0_irq_i;
+			`irqBit'h1:	i_bus_irq = d1_irq_i;
+			`irqBit'h2:	i_bus_irq = d2_irq_i;
+			`irqBit'h3:	i_bus_irq = d3_irq_i;
+			default:i_bus_irq = 0;	//{m0_adr_i, m0_sel_i, m0_dat_i, m0_we_i, m0_cab_i, m0_cyc_i,m0_stb_i};
 		endcase			
 	end
 
 	//
 	// arbitor 
 	//
-	assign i_gnt_arb[0] = (gnt == 3'd0);
-	assign i_gnt_arb[1] = (gnt == 3'd1);
-	assign i_gnt_arb[2] = (gnt == 3'd2);
-	assign i_gnt_arb[3] = (gnt == 3'd3);
-	assign i_gnt_arb[4] = (gnt == 3'd4);
+	assign i_gnt_arb[0] = (gnt == `irqBit'd0);
+	assign i_gnt_arb[1] = (gnt == `irqBit'd1);
+	assign i_gnt_arb[2] = (gnt == `irqBit'd2);
+	assign i_gnt_arb[3] = (gnt == `irqBit'd3);
 
 	irq_arb	irq_arb(
 		.clk(clk_i), 
 		.rst(rst_i),
 		.req(
-			{d4_irq_i,
-			 d3_irq_i,
+			{d3_irq_i,
 			 d2_irq_i,
 			 d1_irq_i,
 			 d0_irq_i}

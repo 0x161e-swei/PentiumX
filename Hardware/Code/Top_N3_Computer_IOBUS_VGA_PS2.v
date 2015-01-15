@@ -234,7 +234,12 @@ module Top_N3_Computer_IOBUS_VGA_PS2(
                     .data_out           (m0_dat_i),
 					//.data_in          (Cpu_data4bus),
                     .data_in            (m0_dat_o),
-					.CPU_MIO            (CPU_MIO),
+                    // Interrupt Interface
+                    .Ireq				(m0_irq_o),
+                    .gntInt				(gntInt),
+                    .Iack 				(m0_Iack_i),
+
+					.CPU_MIO            (CPU_MIO), 			// not in use
 					.state              (state) 			// Test
 					);
 
@@ -385,7 +390,7 @@ module Top_N3_Computer_IOBUS_VGA_PS2(
 					);
 
 	/* GPIO out use on 7-seg display & CPU state display addre=e0000000-efffffff */
-	Device_GPIO_7seg U5( 
+	Device_GPIO_7seg U14( 
 					.clk 				(clk_io),
 					.rst 				(rst),
 					.GPIOfffffe00_we 	(GPIOfffffe00_we),
@@ -400,6 +405,22 @@ module Top_N3_Computer_IOBUS_VGA_PS2(
 					.Test_data6			({ps2_ready, 15'h0, ps2_key, key}),
 					//pc;
 					.disp_num			(disp_num)
+					);
+
+	irq_controller  U15(
+					.clk_i				(clk),
+					.rst_i				(rst),
+					.i_gnt_arb			(gntInt),
+					.m0_Iack_i			(Iack),
+					.m0_irq_o			(Ireq),
+					.d0_irq_i			(rx_irq),					// uart(disk)
+					.d0_Iack_o			(rx_iack),
+					.d1_irq_i			(timer_irq),				// timer
+					.d1_Iack_o			(timer_ps2_),
+					.d2_irq_i			(ps2_irq),					// ps2
+					.d2_Iack_o			(ps2_iack),
+					.d3_irq_i			(),							// not in use
+					.d3_Iack_o			()
 					);
 
 	Counter_x 	   	U10(
@@ -472,9 +493,9 @@ module Top_N3_Computer_IOBUS_VGA_PS2(
 					.sys_clk			(clk_m),
 					.sys_rst			(rst),
 
-					.rx_irq				(),
+					.rx_irq				(rx_irq),
 					.tx_irq				(),
-
+					.tx_iack 			(rx_iack)
 					.uart_rx			(uart_rx),
 					.uart_tx			(uart_tx)
 					);

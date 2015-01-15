@@ -6,6 +6,7 @@
 ////  Author: Rudolf Usselmann                                   ////
 ////          rudi@asics.ws                                      ////
 //// 		  skar.Wei 											 ////
+////          Just-CJ                                            ////
 ////                                                             ////
 ////                                                             ////
 ////                                                             ////
@@ -15,6 +16,7 @@
 ////                         www.asics.ws                        ////
 ////                         rudi@asics.ws                       ////
 //// Copyright (C) 2015 	skar.Wei<dtsps.skar@gmail.com>		 ////
+//// Copyright (C) 2015 	Just-CJ<black_void_s@hotmail.com> 	 ////
 ////                                                             ////
 //// This source file may be used and distributed without        ////
 //// restriction provided that this copyright statement is not   ////
@@ -46,6 +48,7 @@
 //
 //                        
 
+`include "irq_controller_defines.v"
 
 module irq_arb(
 						clk, 
@@ -56,8 +59,10 @@ module irq_arb(
 
 	input				clk;
 	input				rst;
-	input	[ 4: 0]		req;		// Req input
-	output	[ 4: 0]		gnt; 		// Grant output
+	input	[`irqNum - 1: 0]		
+						req;		// Req input
+	output	[`irqNum - 1: 0]		
+						gnt; 		// Grant output
 	//input		next;		// Next Target
 
 	///////////////////////////////////////////////////////////////////////
@@ -66,12 +71,12 @@ module irq_arb(
 	//
 
 
-	parameter	      	grant0 = 3'h0,
-	                	grant1 = 3'h1,
-	                	grant2 = 3'h2,
-	                	grant3 = 3'h3,
-	                	grant4 = 3'h4;
-	                	//grant5 = 3'h5;
+	parameter	      	grant0 = `irqBit'h0,
+	                	grant1 = `irqBit'h1,
+	                	grant2 = `irqBit'h2,
+	                	grant3 = `irqBit'h3,
+	                	// grant4 = `irqBit'h4;
+	                	// grant5 = `irqBit'h5;
 	            
 
 	///////////////////////////////////////////////////////////////////////
@@ -79,7 +84,7 @@ module irq_arb(
 	// Local Registers and Wires
 	//
 
-	reg 	[ 2: 0]		state = 0, next_state = 0;
+	reg 	[`irqBit - 1: 0]		state = 0, next_state = 0;
 
 	///////////////////////////////////////////////////////////////////////
 	//
@@ -112,9 +117,9 @@ module irq_arb(
 				if(req[2])	next_state = grant2;
 				else
 				if(req[3])	next_state = grant3;
+				/*
 				else
 				if(req[4])	next_state = grant4;
-				/*
 				else
 				if(req[5])	next_state = grant5;
 				else
@@ -129,9 +134,9 @@ module irq_arb(
 				if(req[2])	next_state = grant2;
 				else
 				if(req[3])	next_state = grant3;
+				/*
 				else
 				if(req[4])	next_state = grant4;
-				/*
 				else
 				if(req[5])	next_state = grant5;
 				else
@@ -146,9 +151,9 @@ module irq_arb(
 			// if this req is dropped or next is asserted, check for other req's
 			if(!req[2] ) begin
 				if(req[3])	next_state = grant3;
-				else
-				if(req[4])	next_state = grant4;
 				/*
+				else
+				if(req[4])	next_state = grant4;				
 				else
 				if(req[5])	next_state = grant5;
 				else
@@ -164,32 +169,31 @@ module irq_arb(
 	 	    grant3:
 			// if this req is dropped or next is asserted, check for other req's
 			if(!req[3] ) begin
+				/*
 				if(req[4])	next_state = grant4;
 				else
-				if(req[5])	next_state = grant5;
-				/*
+				if(req[5])	next_state = grant5;				
 				else
 				if(req[6])	next_state = grant6;
 				else
-				if(req[7])	next_state = grant7;
-				*/
+				if(req[7])	next_state = grant7;				
 				else
+				*/
 				if(req[0])	next_state = grant0;
 				else
 				if(req[1])	next_state = grant1;
 				else
 				if(req[2])	next_state = grant2;
 			end
+			/*
 	 	    grant4:
 			// if this req is dropped or next is asserted, check for other req's
 			if(!req[4] ) begin
-				if(req[5])	next_state = grant5;
-				/*
+				if(req[5])	next_state = grant5;				
 				else
 				if(req[6])	next_state = grant6;
 				else
-				if(req[7])	next_state = grant7;
-				*/
+				if(req[7])	next_state = grant7;				
 				else
 				if(req[0])	next_state = grant0;
 				else
@@ -198,8 +202,7 @@ module irq_arb(
 				if(req[2])	next_state = grant2;
 				else
 				if(req[3])	next_state = grant3;
-			end
-			/*
+			end			
 	 	   	grant5:
 			// if this req is dropped or next is asserted, check for other req's
 			if(!req[5] ) begin
