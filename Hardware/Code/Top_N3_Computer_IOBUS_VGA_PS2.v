@@ -174,6 +174,7 @@ module Top_N3_Computer_IOBUS_VGA_PS2(
 	// assign MIO_ready=~button_out[1];
 
 	// Variables for Interruppt
+	wire 		[31: 0] intrrupt_en;
 	wire 		[ 3: 0] gntInt;
 	wire 				Iack, Ireq;								// CPU Interrupt signals
 	wire 				rx_irq, rx_iack, ps2_irq, ps2_iack, 	// Devices INT signals
@@ -244,7 +245,7 @@ module Top_N3_Computer_IOBUS_VGA_PS2(
                     .Ireq				(Ireq),
                     .gntInt				(gntInt),
                     .Iack 				(Iack),
-                    .intrrupt_en_o		(intrrupt_en_o),
+                    .intrrupt_en_o		(intrrupt_en),
 
 					.CPU_MIO            (CPU_MIO), 			// not in use
 					.state              (state) 			// Test
@@ -415,19 +416,19 @@ module Top_N3_Computer_IOBUS_VGA_PS2(
 					);
 
 	irq_controller  U15(
-					.clk_i				(clk),
+					.clk_i				(clk_100mhz),
 					.rst_i				(rst),
-					.intrrupt_en 		(intrrupt_en_o),
+					.intrrupt_en 		(intrrupt_en[0]),
 					.i_gnt_arb			(gntInt), 					// granted Device, 0001 for d0(uart)
 					.m0_Iack_i			(Iack),
 					.m0_irq_o			(Ireq),
 					.d0_irq_i			(rx_irq),					// uart(disk)
 					.d0_Iack_o			(rx_iack),
-					.d1_irq_i			(0),					// ps2
+					.d1_irq_i			(ps2_irq),					// ps2
 					.d1_Iack_o			(ps2_iack),
-					.d2_irq_i			(0),				// timer
+					.d2_irq_i			(0),						// timer
 					.d2_Iack_o			(timer_iack),
-					.d3_irq_i			(),							// not in use
+					.d3_irq_i			(0),							// not in use
 					.d3_Iack_o			()
 					);
 
@@ -484,8 +485,11 @@ module Top_N3_Computer_IOBUS_VGA_PS2(
 					//.ps2_rd 			(ps2_rd),
 
 					.ps2_ready 			(ps2_ready),
+					.ps2_irq			(ps2_irq),
+					.ps2_iack			(ps2_iack),
 					.key_d      		(key_d),
-					.key 				(key)
+					.key 				(key),
+					.ps2_key 			(ps2_key)
 					);
 					
 	uart			U13(

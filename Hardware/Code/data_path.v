@@ -67,11 +67,14 @@ module data_path(
     input wire  [ 4: 0] InTcause;
 	input wire  [31: 0] data2CPU;
 
+	output wire [31: 0] intrrupt_en_o;
     output reg  [31: 0] PC_Current; 
     output reg  [31: 0]	Inst_R = 0;
     output wire [31: 0]	data_out;
     output wire [31: 0]	M_addr;
-    output wire 		zero, overflow, intrrupt_en_o;
+
+    output wire 		zero, overflow;
+
 
 
 	reg  		[31: 0] ALU_Out = 32'h0, MDR = 32'h0, ALU_Out2 = 32'h0;
@@ -148,7 +151,7 @@ module data_path(
 					.c0_reg_we			(WriteCp0),
 					.WriteEPC			(WriteEPC),
 					.WriteCause			(WriteCause),
-					.WriteInt			(WriteInt),
+					.WriteInt			(WriteIen),
 					.Int_en_i			(Int_en),
 					.Int_en_o			(intrrupt_en_o),
 					.c0_r_data			(c0_r_data), 				// used for instructions mfc0

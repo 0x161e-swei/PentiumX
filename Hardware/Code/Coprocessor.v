@@ -24,11 +24,11 @@ module Coprocessor(
 	input wire 	[ 4: 0] c0_rd_addr, c0_wr_addr;
 	input wire 	[ 4: 0]	InTcause;
 	input wire 			c0_reg_we, WriteEPC, WriteCause,
-						WriteInt, Int_en_i, Int_en_o;
+						WriteInt, Int_en_i;
 
-	output wire [31: 0]	c0_r_data, epc_o;
+	output wire [31: 0]	c0_r_data, epc_o, Int_en_o;
     integer             i = 0;
-	reg [31: 0]         c0reg[11:14];
+	reg 		[31: 0] c0reg[11:14];
 				// 11 Enable, 12 Base, 13 Cause, 14 Epc
 
 	assign c0_r_data 	= c0reg[c0_rd_addr];
@@ -51,7 +51,7 @@ module Coprocessor(
 			if (c0_reg_we == 1)
 				c0reg[c0_wr_addr] 	<= c0_w_data;
 			if (WriteInt == 1)
-            	c0reg[11] 			<= Int_en_i;
+            	c0reg[11][0] 		<= Int_en_i;
             if (WriteCause == 1)
             	c0reg[13] 			<= InTcause;
 			if (WriteEPC == 1)

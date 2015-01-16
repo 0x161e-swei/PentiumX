@@ -135,7 +135,7 @@ always @(posedge sys_clk) begin
 `ifdef SIMULATION
 			$display("UART: %c", tx_data);
 `endif
-		end else if(1/*enable16*/ && tx_busy) begin
+		end else if(enable16 && tx_busy) begin
 			tx_count16  <= tx_count16 + 4'd1;
 
 			if(tx_count16 == 4'd0) begin

@@ -1,4 +1,4 @@
-FILE=interruptEntrance
+FILE=Syscall
 default:$(FILE).txt $(FILE).bin $(FILE)b.txt
 
 $(FILE)b.txt:$(FILE).bin
@@ -10,11 +10,14 @@ $(FILE).bin:$(FILE).elf
 $(FILE).txt:$(FILE).elf
 	mips-mti-elf-objdump -S -z -M no-aliases $(FILE).elf > $(FILE).txt
 
-$(FILE).elf:$(FILE)s.o
-	mips-mti-elf-ld -EL -T $(FILE).lds -o $(FILE).elf $(FILE)s.o
+$(FILE).elf:$(FILE).o boot.o
+	mips-mti-elf-ld -EL -T $(FILE).lds -o $(FILE).elf $(FILE).o boot.o
+
+boot.o:boot.c
+	mips-mti-elf-gcc -EL -fno-delayed-branch -mno-mad -O -G0 -fno-builtin -o boot.o -c boot.c
 
 $(FILE).o:$(FILE).c
-	mips-mti-elf-gcc -EL -fno-delayed-branch -O -G0 -fno-builtin -o $(FILE).o -c $(FILE).c
+	mips-mti-elf-gcc -EL -fno-delayed-branch -mno-mad -O -G0 -fno-builtin -o $(FILE).o -c $(FILE).c
 
 $(FILE)s.o:$(FILE).s
 	mips-mti-elf-gcc -EL -fno-delayed-branch -O -G0 -fno-builtin -o $(FILE)s.o -c $(FILE).s

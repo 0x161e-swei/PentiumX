@@ -48,15 +48,15 @@ module Mem_I_D 	(
 	//input 		[11: 0] Addr;
 	//input		[31: 0] D_In;
 	//output reg	[31: 0] D_Out;
-	wire [11:0] ram_addr;
-	assign ram_addr = adr_i[13:2];
+	wire [12:0] ram_addr;
+	assign ram_addr = adr_i[14:2];
 
 	(* bram_map="yes" *)
 	reg 	[31: 0] RAM[8191:   0];
 
 
 	initial begin
-		$readmemh("../Coe/testsyscall.coe",RAM);
+		$readmemh("../Coe/Syscallb.coe",RAM);
 	end
 
 	assign #1 ack_o = stb_i;

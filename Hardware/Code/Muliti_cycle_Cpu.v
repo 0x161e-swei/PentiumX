@@ -46,8 +46,9 @@ module Muliti_cycle_Cpu(
 	output wire [31: 0] Addr_out, data_out;						
 	output wire [ 4: 0] state;
 	output wire 		mem_w, CPU_MIO;	
-    output wire         cpu_stb_o, Iack, intrrupt_en_o;	// Bus requset and 
-    													// Interrupt acknowlegement
+    output wire         cpu_stb_o, Iack;	// Bus requset and 
+    output wire [31: 0] intrrupt_en_o;		// Interrupt acknowlegement
+    									
 
 	wire 		[31: 0] PC_Current;
 	wire 		[15: 0] imm;
@@ -59,7 +60,8 @@ module Muliti_cycle_Cpu(
 	wire 				MemRead, MemWrite, IorD, IRWrite, RegWrite, 
 						PCWrite, PCWriteCond, Beq, data2Mem, zero, 
 						overflow, Signext, WriteEPC, WriteCause, 
-						WriteCp0, sysCause, WriteInt, Int_enm;			
+						WriteCp0, sysCause, WriteInt, Int_enm;	
+	reg 		[ 3: 0]	gntIntOut;		
 
 
 
@@ -98,7 +100,11 @@ module Muliti_cycle_Cpu(
 					.Int_en 			(Int_en)
  					);
 
- 		assign InTcause		= {gntInt & {4{Ireq}}, sysCause};				// TODO: to be precise
+ 		assign InTcause		= {gntIntOut, sysCause};				// TODO: to be precise
+ 		
+ 		always @(posedge clk) begin
+ 			gntIntOut <= gntInt & {4{Ireq}};
+ 		end
 
 	data_path M2(
 					.clk 				(clk),

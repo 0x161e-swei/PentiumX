@@ -158,6 +158,8 @@ module 		ctrl(
 					PCSource[2]  			<= 1;	
 					WriteEPC 			 	<= 1;
 					WriteCause 			 	<= 1;
+					WriteIen 				<= 1;
+					Int_en 					<= 0;
 					sysCause 				<= 0; 					
 					`CPU_ctrl_signals  		<= 17'h10020;			
 					ALU_operation 			<= SUB;
@@ -346,6 +348,7 @@ module 		ctrl(
 					
 					6'b001100: begin 												//Andi  
 						`CPU_ctrl_signals	<= 17'h00050;
+						Signext 			<= 1;
 						ALU_operation 		<= AND;
 						state 				<= EX_I;
 					end
@@ -377,8 +380,8 @@ module 		ctrl(
 					
 					6'b001001: begin 												//Addiu
 						`CPU_ctrl_signals 	<= 17'h00050;
-						Signext				<= 1;
-						ALU_operation 		<= ADDU;
+						Signext				<= 0;
+						ALU_operation 		<= ADD;
 						state 				<= EX_I;
 					end
 
@@ -582,6 +585,12 @@ module 		ctrl(
 				WriteEPC 			<= 0;
 				WriteCause 			<= 0;
 				sysCause			<= 0;	
+				state 				<= IF; 
+			end
+
+			EX_INT: begin
+				`CPU_ctrl_signals	<= 17'h12821;
+				ALU_operation		<= ADD; 
 				state 				<= IF; 
 			end
 
