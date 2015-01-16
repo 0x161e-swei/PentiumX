@@ -37,8 +37,11 @@ module PS2_IO(
 				//ps2_rd,
 
 				ps2_ready,
+				ps2_irq,
+				ps2_iack,
 				key_d,
-				key
+				key,
+				ps2_key
 				);
 
 	//cpu_read_write		
@@ -50,18 +53,21 @@ module PS2_IO(
 	output ack_o;
 
     input               io_read_clk, clk_ps2, rst, PS2_clk, PS2_Data;
-
-    output              ps2_ready;
-    output wire  [ 7: 0] key;
+    input 				ps2_iack;
+    output              ps2_ready, ps2_irq;
+    output wire [ 7: 0] key;
     output reg  [31: 0] key_d;
     
 
 
 
-	wire ps2_rdn;
-	
+	wire 				ps2_rdn;
+	wire 				ps2_rd;
+	wire 				ps2_irq;
+
+	assign ps2_irq = ps2_ready & ~ps2_iack; 
 	assign ack_o = stb_i;
-	wire ps2_rd;
+	
 	assign ps2_rd = stb_i & ack_o & ~we_i;
 	
 	assign ps2_rdn  = ~(ps2_rd & ps2_ready); 
@@ -78,7 +84,7 @@ module PS2_IO(
 			end
 		else begin
 			//ps2_rdn  <=1;
-			dat_o <= 32'h0000_00aa;
+			dat_o <= 32'h0000_00bb;
 		end
 	
 	/*
@@ -115,7 +121,7 @@ module PS2_IO(
 
 	assign key = (ps2_ready) ? ps2_key : 8'haa;
 
-	wire [7:0] ps2_key;
+	output wire [ 7: 0] ps2_key;
 	wire ps2_ready;
 
 	ps2_kbd ps2_kbd(

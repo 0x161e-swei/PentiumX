@@ -37,7 +37,8 @@ module uart #(
 	output tx_irq,
 
 	input uart_rx,
-	output uart_tx
+	output uart_tx,
+	input rx_iack
 );
 
 reg [15:0] divisor;
@@ -79,7 +80,7 @@ uart_transceiver transceiver(
 	.rx_done(rx_done),
 
 	.tx_data(tx_data_out),
-	.tx_wr(tran_tx_wr),
+	.tx_wr(fifo_tx_rd),
 	.tx_done(tx_done),
 	.tx_busy(tx_busy),
 	.rx_busy(rx_busy)
@@ -87,18 +88,22 @@ uart_transceiver transceiver(
 
 
 
-always @(posedge sys_clk) begin
-	if(rx_done & ~fifo_rx_wr) fifo_rx_wr = 1;
-	else if(~rx_done & fifo_rx_wr & ~tmpflag) begin 
-		fifo_rx_wr = 1;
-		tmpflag = 1;
-		end
-	else if(tmpflag) begin 
-		fifo_rx_wr = 0;
-		tmpflag = 0;
-		end
-end
+// always @(posedge sys_clk) begin
+// 	if(rx_done & ~fifo_rx_wr) fifo_rx_wr = 1;
+// 	else if(~rx_done & fifo_rx_wr & ~tmpflag) begin 
+// 		fifo_rx_wr = 1;
+// 		tmpflag = 1;
+// 		end
+// 	else if(tmpflag) begin 
+// 		fifo_rx_wr = 0;
+// 		tmpflag = 0;
+// 		end
+// end
 
+ always @(posedge sys_clk) begin
+ 	if(rx_done) fifo_rx_wr = 1;
+ 	else fifo_rx_wr = 0;
+ 	end
 
 assign fifo_rx_rd = rx_wr & ~fifo_rd_once;
 always @(posedge sys_clk) begin
@@ -106,7 +111,7 @@ always @(posedge sys_clk) begin
 	else fifo_rd_once = 0;
 end
 
-assign rx_irq = full_rx;
+assign rx_irq = full_rx & ~rx_iack;
 
 uart_fifo fifo_rx (
   .clk(sys_clk), // input clk

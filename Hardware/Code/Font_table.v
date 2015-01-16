@@ -10,7 +10,7 @@ module Font_table (
     (* bram_map="yes" *)
     reg         [15: 0] Rom [   0:4095];
     initial begin
-        $readmemh("../Coe/Font16", Rom);
+        $readmemh("../Coe/Font16_new", Rom);
     end
     /*
     always @( negedge clk )begin
