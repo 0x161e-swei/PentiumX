@@ -24,9 +24,6 @@
 // constant
 #define TEXT_WIDTH 40
 #define TEXT_HEIGHT 30
-// vga_control
-#define VGA_IDLE 0
-#define VGA_OUTPUT 1
 // key_code
 #define BACK_SAPCE 0x08
 #define ENTER 0x0d
@@ -249,7 +246,7 @@ void sys_PrintInt(unsigned int a0)
 	char c;
 	for (i=0; i<8; i++) {
 		c = (a0&0xf0000000) >> 28;
-		sys_PrintChar(hex[c]);
+		sys_PrintChar(hex[c]+0x700);
 		a0 = a0 << 4;
 	}
 }
