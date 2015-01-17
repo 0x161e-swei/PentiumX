@@ -2,6 +2,7 @@
 *.txt
 *.exe
 *.elf
+*.bin
 
 
 # Windows image file caches

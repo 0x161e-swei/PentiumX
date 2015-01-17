@@ -30,6 +30,7 @@
 // key_code
 #define BACK_SAPCE 0x08
 #define ENTER 0x0d
+#define CAPSLOCK   0x14
 // file operation
 #define FILE_IDLE 0
 #define SECTION_READ 1
@@ -48,6 +49,8 @@
 #define CMD_LOU (CMD_EXEC+20)
 #define HEX (CMD_LOU+16)
 #define CHAR_DEVICE (HEX+64)
+#define KEYF0IN		(CHAR_DEVICE + 8)
+#define CAPSON 		(KEYF0IN + 4)
 
 typedef struct{
 	unsigned int x, y;
@@ -148,7 +151,7 @@ void sys_PrintChar(unsigned int a0)
 	cursor.y = *(char_device + 1);
 
 
-	if (a0-0x700>=20 && a0-0x700<=0xff) {
+	if ((a0 & 0xff) >= 20 && (a0 & 0xff) <= 0xff) {
 		*(vram + Multiply(TEXT_WIDTH, cursor.x) + cursor.y) = a0;
 		cursor.y++;
 		if (cursor.y == TEXT_WIDTH) {
@@ -186,7 +189,7 @@ void sys_PrintChar(unsigned int a0)
 			//*gpio += 0x400;
 		}
 	}
-	else if (a0-0x700 == BACK_SAPCE) {
+	else if ((a0 & 0xff) == BACK_SAPCE) {
 		if (cursor.y != 0) {
 			--cursor.y;
 			*(vram + Multiply(TEXT_WIDTH, cursor.x) + cursor.y) = 0;
@@ -213,7 +216,7 @@ void sys_PrintChar(unsigned int a0)
 			//*gpio += 0x00009c00;
 		}
 	}
-	else if (a0-0x700 == ENTER) {
+	else if ((a0 & 0xff) == ENTER) {
 		//*gpio &= 0xffff03ff;
 		*(char_device+1) = 0;
 		if (cursor.x == TEXT_HEIGHT-1) {
@@ -251,6 +254,11 @@ void sys_PrintInt(unsigned int a0)
 	}
 }
 
+/**
+ * This is a syscalll function
+ * The syscall read a Word from 0x00007f04 to 0x00007f3c
+ * And move the return it with $a0
+ */
 void sys_ReadChar()
 {
 	unsigned int* kb_buffer = (unsigned int*)KB_BUFFER;
@@ -451,6 +459,18 @@ void Ps2()
 	end = (*kb_buffer) & 0x0000ffff;
 	c = *(unsigned int*)KEY_CODE;
 
+	if (c == 0x1f0 ) {
+		*(unsigned int *)KEYF0IN = 1;
+		goto ps2_rtn;	
+	}
+	else if (*(unsigned int *)KEYF0IN == 1){
+		*(unsigned int *)KEYF0IN = 0;
+		goto ps2_rtn;		
+	}
+	else {
+		*(unsigned int *)KEYF0IN = 0;
+	}
+		
 	*(kb_buffer+1+end) = c;
 	end++;
 	if (end == KB_BUFFER_SIZE){
@@ -459,6 +479,7 @@ void Ps2()
 	*(kb_buffer) &= 0xffff0000;
 	*(kb_buffer) += end;
 
+ps2_rtn:
 	asm ("lw $a0, 0($sp)");
 	asm ("lw $a1, 4($sp)");
 	asm ("lw $v0, 8($sp)");

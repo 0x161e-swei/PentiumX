@@ -34,10 +34,13 @@
 #define CMD_EXEC (CMD_TOUCH+24)
 #define CMD_LOU (CMD_EXEC+20)
 #define HEX (CMD_LOU+16)
-#define CHAR_DEVICE (HEX+16)
+#define CHAR_DEVICE (HEX+64)
+#define KEYF0IN		(CHAR_DEVICE + 8)
+#define CAPSON 		(KEYF0IN + 4)
 // key code
-#define BACK_SPACE 0x08
-#define ENTER 0x0d
+#define BACK_SPACE 	0x08
+#define ENTER 		0x0d
+#define CAPSLOCK   	0x14
 // file operations
 #define FILE_IDLE 0
 #define FILE_READ 14
@@ -106,6 +109,10 @@ void Initial()
 	address = (unsigned int*)CHAR_DEVICE;
 	*address = 0;
 	*(address+1) = 0;
+
+	address = (unsigned int *) KEYF0IN;
+	*address = 0;
+
 
 	// initial global variable
 	// *(int* ) POINTER=0;
@@ -291,6 +298,13 @@ unsigned int Mod(unsigned int dividend, unsigned divider)
 	return dividend;
 }
 
+
+void Sleep(unsigned int num){
+	while (num--){
+		asm("nop");
+	}
+}
+
 unsigned int ReadChar()
 {
 	unsigned int a0;
@@ -300,7 +314,19 @@ unsigned int ReadChar()
 	asm ("add $v0, $zero, 12");
 	asm ("syscall");
 	asm ("add %0, $zero, $a0":"=r"(a0));
-
+/*
+	if (a0 == 0x1f0){
+		do{
+			asm ("add $v0, $zero, 12");
+			asm("syscall");
+			Sleep(10);
+			asm ("add %0, $zero, $a0":"=r"(a0));
+		} while(a0 != 0);
+		asm ("lw $ra, 0($sp)");
+		asm ("addiu $sp, $sp, 4");
+		return 0x100;
+	}
+*/		
 	asm ("lw $ra, 0($sp)");
 	asm ("addiu $sp, $sp, 4");
 	return a0;
@@ -937,35 +963,77 @@ void Lou()
 //	*exit = 1;
 //}
 
+unsigned int getCode(unsigned int scanCode)
+{
+	/* 131 scanCode decode*/
+	unsigned int Decode[] = { 0x20, 	/* we do not have scan code as 0x00 */
+		0x108, 	0x20,	0x104, 	0x102, 	0x100, 	0x101, 	0x10b, 	0x20, 	0x109, 	0x107,
+		0x105, 	0x103, 	0x09, 	0x60, 	0x20, 	0x20, 	0x121, 	0x115, 	0x20, 	0x116,
+		0x51, 	0x31, 	0x20, 	0x20, 	0x20, 	0x5a, 	0x53, 	0x41, 	0x57, 	0x32,
+		0x117,	0x20, 	0x43, 	0x58, 	0x44, 	0x45, 	0x34, 	0x33, 	0x117,	0x20,
+		0x20, 	0x56, 	0x46, 	0x54, 	0x52, 	0x35, 	0x114, 	0x20, 	0x4e,	0x42,
+		0x48, 	0x47, 	0x59,	0x36, 	0x20, 	0x20, 	0x20, 	0x4d, 	0x4a,	0x55,
+		0x37, 	0x38, 	0x20, 	0x20,	0x2c, 	0x4b, 	0x49, 	0x4f,	0x30, 	0x39,
+		0x20, 	0x60, 	0x2e, 	0x2f, 	0x4c,	0x3b, 	0x50, 	0x2d, 	0x20,	0x20,
+		0x20, 	0x20, 	0x20, 	0x5b, 	0x3d, 	0x20,	0x20, 	0x14, 	0x115, 	0x0d,
+		0x5d, 	0x20, 	0x5c, 	0x20, 	0x20, 	0x20, 	0x20,	0x20, 	0x20, 	0x20,
+		0x20, 	0x08, 	0x20, 	0x20, 	0x119, 	0x20, 	0x10E, 	0x118, 	0x20, 	0x20,
+		0x20, 	0x11C, 	0x2e, 	0x10D, 	0x10F, 	0x20, 	0x10C, 	0x1b, 	0x120,	0x10A,
+		0x2b, 	0x111, 	0x2d, 	0x2a, 	0x110, 	0x20, 	0x20, 	0x20, 	0x20, 	0x20,
+		0x106
+	};
+
+
+	if (scanCode > 0x100 && scanCode <= 0x183){
+		if (!(*(unsigned int *)CAPSON)){
+			if (Decode[scanCode - 0x100] >= 0x041 && Decode[scanCode - 0x100] <= 0x5a)
+				return Decode[scanCode - 0x100] + 0x20;
+		}
+		return Decode[scanCode - 0x100];	 			
+	}
+	else return 0x00;
+}
+
 void ReadLine(unsigned int* line)
 {
-	unsigned int c;
+	unsigned int c, ch;
 	int count = 0;
+	unsigned int lineLimit[] = {'T' + 0x700, 'o' + 0x700, 'o' + 0x700, ' ' + 0x700, 
+							'L' + 0x700, 'o' + 0x700, 'n' + 0x700, 'g' + 0x700, '!' + 0x700, '\0'};
 	while (1) {
-		c = ReadChar();
-		
-		switch (c) {
-			case '\0':
-				break;
-			case ENTER:
-				line[count] = '\0';
-				return;
-				break;
-			case BACK_SPACE:
-				line[--count] = '\0';
-				break;
-			default:
-				PrintChar(c|0x700);
-				if (c>=20 && c<=0xfe) {
-					line[count++] = c;
-				}
-				break;
+		c = ReadChar();				// ScanCode
+		if (c == 0x1e0) continue;
+		ch = getCode(c);
+		if ( ch != 0xf0 ){
+			switch (ch) {
+				case '\0':
+					break;
+				case CAPSLOCK:
+					*(unsigned int *)CAPSON = !*(unsigned int *)CAPSON;
+					break;
+				case ENTER:
+					line[count] = '\0';
+					PrintChar(ENTER);
+					return;
+					break;
+				case BACK_SPACE:
+					line[--count] = '\0';
+					PrintChar(BACK_SPACE);
+					break;
+				default:
+					PrintChar(ch | 0x700);
+					if (ch >= 20 && ch <= 0xfe) {
+						line[count++] = ch;
+					}
+					break;
+			}	
 		}
+		
 		// command buffer is full
 		if (count == 25) {
 			line[0] = '\0';
 			PrintChar(ENTER+0x700);
-			PrintString(error);
+			PrintString(lineLimit);
 			PrintChar(ENTER+0x700);
 			return;
 		}
