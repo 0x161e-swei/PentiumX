@@ -68,7 +68,8 @@ typedef int BOOL;
 typedef struct{
 	unsigned short current_sector;
 	unsigned short read_write_head;
-	unsigned int size;
+	unsigned short size;
+	unsigned short is_valid;
 }FileInfo;
 
 typedef struct{
@@ -94,9 +95,11 @@ unsigned int* cmd_exec;
 unsigned int* cmd_lou;
 unsigned int* hex;
 FileInfo* file_info;
+void ClearScreen();
 
 void Initial()
 {
+	ClearScreen();
 	unsigned int* address;
 	// initial VRAM
 	// address = (unsigned int*)VRAM;
@@ -163,6 +166,7 @@ void Initial()
 	cmd_lou[0] = 'l'  ; cmd_lou[1] = 'o'  ; cmd_lou[2] = 'u'  ; cmd_lou[3] = '\0'; 
 
 	file_info = (FileInfo*)FILE_INFO;
+
 }
 
 void Strcpy(unsigned int* dest, unsigned int* src, unsigned int size)
@@ -178,14 +182,18 @@ void CharToInt(unsigned int* src, unsigned int* dest, unsigned int size)
 {
 	unsigned int count=0;
 	while (1) {
-		asm ("andi $t0, %0, 0x000000ff"::"r"(src[count>>2]));
+		asm ("srl $t0, %0, 24"::"r"(src[count>>2]));
+		asm ("andi $t0, $t0, 0xff");
 		asm ("add %0, $t0, $zero":"=r"(dest[count]));
 		//dest[count] = src[count>>2]&0x000000ff;
 		if (dest[count] == '\0') {
 			break;
 		}
 		count++;
-		asm ("srl $t0, %0, 8"::"r"(src[count>>2]));
+		if (count >= size) {
+			break;
+		}
+		asm ("srl $t0, %0, 16"::"r"(src[count>>2]));
 		asm ("andi $t0, $t0, 0xff");
 		asm ("add %0, $t0, $zero":"=r"(dest[count]));
 		//dest[count] = (src[count>>2]&0x0000ff00)>>8;
@@ -193,7 +201,10 @@ void CharToInt(unsigned int* src, unsigned int* dest, unsigned int size)
 			break;
 		}
 		count++;
-		asm ("srl $t0, %0, 16"::"r"(src[count>>2]));
+		if (count >= size) {
+			break;
+		}
+		asm ("srl $t0, %0, 8"::"r"(src[count>>2]));
 		asm ("andi $t0, $t0, 0xff");
 		asm ("add %0, $t0, $zero":"=r"(dest[count]));
 		//dest[count] = (src[count>>2]&0x00ff0000)>>16;
@@ -201,7 +212,10 @@ void CharToInt(unsigned int* src, unsigned int* dest, unsigned int size)
 			break;
 		}
 		count++;
-		asm ("srl $t0, %0, 24"::"r"(src[count>>2]));
+		if (count >= size) {
+			break;
+		}
+		asm ("srl $t0, %0, 0"::"r"(src[count>>2]));
 		asm ("andi $t0, $t0, 0xff");
 		asm ("add %0, $t0, $zero":"=r"(dest[count]));
 		//dest[count] = (src[count>>2]&0xff000000)>>24;
@@ -220,22 +234,34 @@ void IntToChar(unsigned int* src, unsigned int* dest, unsigned int size)
 	unsigned int count=0;
 	while (1) {
 		dest[count>>2] = 0;
-		dest[count>>2] += src[count];
+		dest[count>>2] += src[count]<<24;
 		if (src[count] == '\0') {
 			break;
 		}
 		count++;
-		dest[count>>2] += src[count]<<8;
-		if (src[count] == '\0') {
+		if (count >= size) {
 			break;
 		}
-		count++;
+
 		dest[count>>2] += src[count]<<16;
 		if (src[count] == '\0') {
 			break;
 		}
 		count++;
-		dest[count>>2] += src[count]<<24;
+		if (count >= size) {
+			break;
+		}
+
+		dest[count>>2] += src[count]<<8;
+		if (src[count] == '\0') {
+			break;
+		}
+		count++;
+		if (count >= size) {
+			break;
+		}
+
+		dest[count>>2] += src[count]<<0;
 		if (src[count] == '\0') {
 			break;
 		}
@@ -317,7 +343,7 @@ unsigned int ReadChar()
 	asm ("sw $ra, 0($sp)");
 
 	asm ("add $v0, $zero, 12");
-	asm ("syscall");
+	// asm ("syscall");
 	asm ("add %0, $zero, $a0":"=r"(a0));
 /*
 	if (a0 == 0x1f0){
@@ -412,11 +438,14 @@ void SplitName(unsigned int* file_name, unsigned int* name, unsigned int* extens
 
 void SectionRead(unsigned int section_number)
 {
+	if (file_info->current_sector == section_number
+		&& file_info->is_valid == 1)	{
+		return;
+	}
 	asm ("addiu $sp, $sp, -4");
 	asm ("sw $ra, 0($sp)");
 
 	asm ("add $a0, $zero, %0"::"r"(section_number));
-	asm ("add $a1, $zero, $zero");
 	asm ("add $v0, $zero, 14");
 	asm ("syscall");
 
@@ -430,7 +459,6 @@ void SectionWrite(unsigned int section_number)
 	asm ("sw $ra, 0($sp)");
 
 	asm ("add $a0, $zero, %0"::"r"(section_number));
-	asm ("add $a1, $zero, $zero");
 	asm ("add $v0, $zero, 15");
 	asm ("syscall");
 
@@ -603,7 +631,7 @@ void Dir()
 
 void Type(unsigned int* argv[])
 {
-	int i, j;
+	unsigned int i, j;
 	char* file = (char*)FILE_BUFFER;
 	unsigned int sum_sectors;
 	unsigned short fat_sector, next_sector;
@@ -979,6 +1007,19 @@ clear:
 //	}
 //}
 
+void Lougb()
+{
+	unsigned int s[23];
+	s[0] = 0x780; s[1] = 's' + 0x700 ; s[2] = 'i' + 0x700 ; s[3] = 'r' + 0x700 ; s[4] = ',' + 0x700 ;
+	s[5] = 'G' + 0x700; s[6] = 'o' + 0x700; s[7] = 'o' + 0x700;  s[8] = 'd' + 0x700;; s[9] = ' ' + 0x700 ; 
+	s[10] = 'B' + 0x700; s[11] = 'y' + 0x700 ; s[12] = 'e' + 0x700; s[13] = '\0';
+
+	// 楼sir，Good Bye
+
+	PrintString(s, 0x700);
+	PrintChar(ENTER, 0x700);
+}
+
 void Lou()
 {
 	unsigned int s[23];
@@ -1007,15 +1048,15 @@ void Lou()
 unsigned int getCode(unsigned int scanCode)
 {
 	/* 131 scanCode decode*/
-	unsigned int DecodeBig[] = { 0x20, 		/* we do not have scan code as 0x00 */
+	unsigned int DecodeBig[] = { 0x20, 	/* we do not have scan code as 0x00 */
 		0x108, 	0x20,	0x104, 	0x102, 	0x100, 	0x101, 	0x10b, 	0x20, 	0x109, 	0x107,
 		0x105, 	0x103, 	0x09, 	0x7e, 	0x20, 	0x20, 	0x121, 	0x115, 	0x20, 	0x116,
-		0x71, 	0x21, 	0x20, 	0x20, 	0x20, 	0x7a, 	0x73, 	0x61, 	0x77, 	0x40,
-		0x117,	0x20, 	0x63, 	0x78, 	0x64, 	0x65, 	0x24, 	0x23, 	0x117,	0x20,
-		0x20, 	0x76, 	0x66, 	0x74, 	0x72, 	0x25, 	0x114, 	0x20, 	0x6e,	0x62,
-		0x68, 	0x67, 	0x79,	0x5e, 	0x20, 	0x20, 	0x20, 	0x6d, 	0x6a,	0x75,
-		0x26, 	0x2a, 	0x20, 	0x20,	0x3c, 	0x6b, 	0x69, 	0x6f,	0x29, 	0x28,
-		0x20, 	0x20, 	0x3e, 	0x3f, 	0x6c,	0x3a, 	0x70, 	0x5f, 	0x20,	0x20,
+		0x51, 	0x21, 	0x20, 	0x20, 	0x20, 	0x5a, 	0x53, 	0x41, 	0x57, 	0x29,
+		0x117,	0x20, 	0x43, 	0x58, 	0x44, 	0x45, 	0x24, 	0x23, 	0x117,	0x20,
+		0x20, 	0x56, 	0x46, 	0x54, 	0x52, 	0x25, 	0x114, 	0x20, 	0x4e,	0x42,
+		0x48, 	0x47, 	0x59,	0x5e, 	0x20, 	0x20, 	0x20, 	0x4d, 	0x4a,	0x55,
+		0x26, 	0x2a, 	0x20, 	0x20,	0x3c, 	0x4b, 	0x49, 	0x4f,	0x2a, 	0x28,
+		0x20, 	0x20, 	0x3e, 	0x3f, 	0x4c,	0x3a, 	0x50, 	0x5f, 	0x20,	0x20,
 		0x20, 	0x22, 	0x20, 	0x7b, 	0x2b, 	0x20,	0x20, 	0x14, 	0x115, 	0x0d,
 		0x7d, 	0x20, 	0x7c, 	0x20, 	0x20, 	0x20, 	0x20,	0x20, 	0x20, 	0x20,
 		0x20, 	0x08, 	0x20, 	0x20, 	0x119, 	0x20, 	0x10E, 	0x118, 	0x20, 	0x20,
@@ -1041,9 +1082,8 @@ unsigned int getCode(unsigned int scanCode)
 		0x106
 	};
 
-
 	if (scanCode > 0x100 && scanCode <= 0x183){
-		if (!(*(unsigned int *)CAPSON)){
+		if (*(unsigned int *)CAPSON == 1){
 			return DecodeBig[scanCode - 0x100];		
 		}
 		else
@@ -1061,21 +1101,19 @@ void ReadLine(unsigned int* line)
 	while (1) {
 		c = ReadChar();				// ScanCode
 		if (c == 0x1e0) continue;
+
 		ch = getCode(c);
+		if (ch & 0x100) 
+			continue;
+			// TODO: control key undecoded
 		if ( ch != 0xf0 ){
 			switch (ch) {
 				case '\0':
 					break;
 				case CAPSLOCK:
-					// asm ("syscall");
-					// asm ("syscall");
-					// asm ("syscall");
-					PrintInt(*(unsigned int *)CAPSON);
+					// PrintInt(*(unsigned int *)CAPSON);
 					*(unsigned int *)CAPSON = !*(unsigned int *)CAPSON;
-					PrintInt(*(unsigned int *)CAPSON);
-					// asm ("syscall");
-					// asm ("syscall");
-					// asm ("syscall");
+					// PrintInt(*(unsigned int *)CAPSON);
 					break; 
 				case ENTER:
 					line[count] = '\0';
@@ -1148,6 +1186,7 @@ void Execute(unsigned int argc, unsigned int* argv[])
 {
 	int i;
 	unsigned int cmd_clr[] = {'c', 'l', 'r', '\0'};
+	unsigned int cmd_lougb[] = {'l', 'o', 'u', 'g', 'b', '\0'};
 
 	// for (i =0 ;i<argc; i++){
 	// 	PrintChar(ENTER);
@@ -1182,6 +1221,9 @@ void Execute(unsigned int argc, unsigned int* argv[])
 //	}
 	else if (Strcmp(argv[0], cmd_lou, 4) == TRUE) {
 		Lou();
+	}
+	else if (Strcmp(argv[0], cmd_lougb, 6) == TRUE){
+		Lougb();
 	}
 	else {
 		PrintString(error, 0x400);

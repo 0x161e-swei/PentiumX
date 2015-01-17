@@ -81,7 +81,7 @@ always @(posedge sys_clk) begin
 	end else begin
 		rx_done <= 1'b0;
 
-		if(enable16) begin
+		if(1/*enable16*/) begin
 			if(~rx_busy) begin // look for start bit
 				if(~uart_rx2) begin // start bit found
 					rx_busy <= 1'b1;
@@ -135,7 +135,7 @@ always @(posedge sys_clk) begin
 `ifdef SIMULATION
 			$display("UART: %c", tx_data);
 `endif
-		end else if(enable16 && tx_busy) begin
+		end else if(1/*enable16*/ && tx_busy) begin
 			tx_count16  <= tx_count16 + 4'd1;
 
 			if(tx_count16 == 4'd0) begin

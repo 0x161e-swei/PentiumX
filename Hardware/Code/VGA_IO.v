@@ -77,7 +77,7 @@ module VGA_IO(
 	assign 		 		font_addr  = {vram_out[7: 0], font_row};				// Actually the font_addr shoud be {vram_out[15: 0], font_row}
 	assign 		 		vga_rdn    = ~(v_active && (addr[ 2: 0] == 3'b000)); 	//
 
-	wire 		 		Blinking   = (Cursor[11: 6] == char_row) && (Cursor[ 5: 0] == char_col) &&( vga_row[ 3: 0] > 3) && (~text_Cursor_switch); //&& (vga_col[2:0]<7 )
+	wire 		 		Blinking   = (Cursor[11: 6] == char_row) && (Cursor[ 5: 0] == char_col) &&( vga_row[ 3: 0] > 13) && (~text_Cursor_switch); //&& (vga_col[2:0]<7 )
 	assign 		 		R[2]       = Blinking ? red   ^ Blink : red;
 	assign 				R[1]       = Blinking ? red   ^ Blink : red;
 	assign 				R[0]       = Blinking ? red   ^ Blink : red;
