@@ -138,6 +138,12 @@ end
 
 //assign tx_irq = full_tx;
 
+reg fifo_tx_rd2 = 0;
+always @(posedge sys_clk) begin
+    fifo_tx_rd2 = fifo_tx_rd;
+end
+
+
 uart_fifo fifo_tx (
   .clk(sys_clk), // input clk
   .rst(sys_rst), // input rst

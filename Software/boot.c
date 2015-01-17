@@ -22,6 +22,7 @@
 #define VRAM 0x000c0000
 #define KB_BUFFER 0x00007f00
 #define CODE_SEGMENT 12
+#define GPIO 0xffffff00
 // global variable
 #define CONSOLE (CODE_SEGMENT+16)
 #define ERROR (CONSOLE+40)
@@ -34,10 +35,13 @@
 #define CMD_EXEC (CMD_TOUCH+24)
 #define CMD_LOU (CMD_EXEC+20)
 #define HEX (CMD_LOU+16)
-#define CHAR_DEVICE (HEX+16)
+#define CHAR_DEVICE (HEX+64)
+#define KEYF0IN		(CHAR_DEVICE + 8)
+#define CAPSON 		(KEYF0IN + 4)
 // key code
-#define BACK_SPACE 0x08
-#define ENTER 0x0d
+#define BACK_SPACE 	0x08
+#define ENTER 		0x0d
+#define CAPSLOCK   	0x14
 // file operations
 #define FILE_IDLE 0
 #define FILE_READ 14
@@ -64,7 +68,8 @@ typedef int BOOL;
 typedef struct{
 	unsigned short current_sector;
 	unsigned short read_write_head;
-	unsigned int size;
+	unsigned short size;
+	unsigned short is_valid;
 }FileInfo;
 
 typedef struct{
@@ -90,9 +95,11 @@ unsigned int* cmd_exec;
 unsigned int* cmd_lou;
 unsigned int* hex;
 FileInfo* file_info;
+void ClearScreen();
 
 void Initial()
 {
+	ClearScreen();
 	unsigned int* address;
 	// initial VRAM
 	// address = (unsigned int*)VRAM;
@@ -106,6 +113,10 @@ void Initial()
 	address = (unsigned int*)CHAR_DEVICE;
 	*address = 0;
 	*(address+1) = 0;
+
+	address = (unsigned int *) KEYF0IN;
+	*address = 0;
+
 
 	// initial global variable
 	// *(int* ) POINTER=0;
@@ -131,30 +142,31 @@ void Initial()
 	error[4] = 'r' + 0x700 ; error[5] = '!' + 0x700 ; error[6] = '\0';
 
 	cmd_dir = (unsigned int*)CMD_DIR;
-	cmd_dir[0] = 'd' + 0x700 ; cmd_dir[1] = 'i' + 0x700 ; cmd_dir[2] = 'r' + 0x700 ; cmd_dir[3] = '\0'; 
+	cmd_dir[0] = 'd'  ; cmd_dir[1] = 'i'  ; cmd_dir[2] = 'r'  ; cmd_dir[3] = '\0'; 
 
 	cmd_type = (unsigned int*)CMD_TYPE;
-	cmd_type[0] = 't' + 0x700 ; cmd_type[1] = 'y' + 0x700 ; cmd_type[2] = 'p' + 0x700 ; cmd_type[3] = 'e' + 0x700 ; cmd_type[4] = '\0';
+	cmd_type[0] = 't'  ; cmd_type[1] = 'y'  ; cmd_type[2] = 'p'  ; cmd_type[3] = 'e'  ; cmd_type[4] = '\0';
 
 	cmd_rename = (unsigned int*)CMD_RENAME;
-	cmd_rename[0] = 'r' + 0x700 ; cmd_rename[1] = 'e' + 0x700 ; cmd_rename[2] = 'n' + 0x700 ; cmd_rename[3] = '\0';
+	cmd_rename[0] = 'r'  ; cmd_rename[1] = 'e'  ; cmd_rename[2] = 'n'  ; cmd_rename[3] = '\0';
 
 	cmd_exit = (unsigned int*)CMD_EXIT;
-	cmd_exit[0] = 'e' + 0x700 ; cmd_exit[1] = 'x' + 0x700 ; cmd_exit[2] = 'i' + 0x700 ; cmd_exit[3] = 't' + 0x700 ; cmd_exit[4] = '\0';
+	cmd_exit[0] = 'e'  ; cmd_exit[1] = 'x'  ; cmd_exit[2] = 'i'  ; cmd_exit[3] = 't'  ; cmd_exit[4] = '\0';
 
 	cmd_del = (unsigned int*)CMD_DEL;
-	cmd_del[0] = 'd' + 0x700 ; cmd_del[1] = 'e' + 0x700 ; cmd_del[2] = 'l' + 0x700 ; cmd_del[3] = '\0';
+	cmd_del[0] = 'd'  ; cmd_del[1] = 'e'  ; cmd_del[2] = 'l'  ; cmd_del[3] = '\0';
 
 	cmd_touch = (unsigned int*)CMD_TOUCH;
-	cmd_touch[0] = 't' + 0x700 ; cmd_touch[1] = 'o' + 0x700 ; cmd_touch[2] = 'u' + 0x700 ; cmd_touch[3] = 'c' + 0x700 ; cmd_touch[4] = 'h' + 0x700 ; cmd_touch[5] = '\0';
+	cmd_touch[0] = 't'  ; cmd_touch[1] = 'o'  ; cmd_touch[2] = 'u'  ; cmd_touch[3] = 'c'  ; cmd_touch[4] = 'h'  ; cmd_touch[5] = '\0';
 
 	cmd_exec = (unsigned int*)CMD_EXEC;
-	cmd_exec[0] = 'e' + 0x700 ; cmd_exec[1] = 'x' + 0x700 ; cmd_exec[2] = 'e' + 0x700 ; cmd_exec[3] = 'c' + 0x700 ; cmd_exec[4] = '\0';
+	cmd_exec[0] = 'e'  ; cmd_exec[1] = 'x'  ; cmd_exec[2] = 'e'  ; cmd_exec[3] = 'c'  ; cmd_exec[4] = '\0';
 
 	cmd_lou = (unsigned int*)CMD_LOU;
-	cmd_lou[0] = 'l' + 0x700 ; cmd_lou[1] = 'o' + 0x700 ; cmd_lou[2] = 'u' + 0x700 ; cmd_lou[3] = '\0'; 
+	cmd_lou[0] = 'l'  ; cmd_lou[1] = 'o'  ; cmd_lou[2] = 'u'  ; cmd_lou[3] = '\0'; 
 
 	file_info = (FileInfo*)FILE_INFO;
+
 }
 
 void Strcpy(unsigned int* dest, unsigned int* src, unsigned int size)
@@ -170,14 +182,18 @@ void CharToInt(unsigned int* src, unsigned int* dest, unsigned int size)
 {
 	unsigned int count=0;
 	while (1) {
-		asm ("andi $t0, %0, 0x000000ff"::"r"(src[count>>2]));
+		asm ("srl $t0, %0, 24"::"r"(src[count>>2]));
+		asm ("andi $t0, $t0, 0xff");
 		asm ("add %0, $t0, $zero":"=r"(dest[count]));
 		//dest[count] = src[count>>2]&0x000000ff;
 		if (dest[count] == '\0') {
 			break;
 		}
 		count++;
-		asm ("srl $t0, %0, 8"::"r"(src[count>>2]));
+		if (count >= size) {
+			break;
+		}
+		asm ("srl $t0, %0, 16"::"r"(src[count>>2]));
 		asm ("andi $t0, $t0, 0xff");
 		asm ("add %0, $t0, $zero":"=r"(dest[count]));
 		//dest[count] = (src[count>>2]&0x0000ff00)>>8;
@@ -185,7 +201,10 @@ void CharToInt(unsigned int* src, unsigned int* dest, unsigned int size)
 			break;
 		}
 		count++;
-		asm ("srl $t0, %0, 16"::"r"(src[count>>2]));
+		if (count >= size) {
+			break;
+		}
+		asm ("srl $t0, %0, 8"::"r"(src[count>>2]));
 		asm ("andi $t0, $t0, 0xff");
 		asm ("add %0, $t0, $zero":"=r"(dest[count]));
 		//dest[count] = (src[count>>2]&0x00ff0000)>>16;
@@ -193,7 +212,10 @@ void CharToInt(unsigned int* src, unsigned int* dest, unsigned int size)
 			break;
 		}
 		count++;
-		asm ("srl $t0, %0, 24"::"r"(src[count>>2]));
+		if (count >= size) {
+			break;
+		}
+		asm ("srl $t0, %0, 0"::"r"(src[count>>2]));
 		asm ("andi $t0, $t0, 0xff");
 		asm ("add %0, $t0, $zero":"=r"(dest[count]));
 		//dest[count] = (src[count>>2]&0xff000000)>>24;
@@ -212,22 +234,34 @@ void IntToChar(unsigned int* src, unsigned int* dest, unsigned int size)
 	unsigned int count=0;
 	while (1) {
 		dest[count>>2] = 0;
-		dest[count>>2] += src[count];
+		dest[count>>2] += src[count]<<24;
 		if (src[count] == '\0') {
 			break;
 		}
 		count++;
-		dest[count>>2] += src[count]<<8;
-		if (src[count] == '\0') {
+		if (count >= size) {
 			break;
 		}
-		count++;
+
 		dest[count>>2] += src[count]<<16;
 		if (src[count] == '\0') {
 			break;
 		}
 		count++;
-		dest[count>>2] += src[count]<<24;
+		if (count >= size) {
+			break;
+		}
+
+		dest[count>>2] += src[count]<<8;
+		if (src[count] == '\0') {
+			break;
+		}
+		count++;
+		if (count >= size) {
+			break;
+		}
+
+		dest[count>>2] += src[count]<<0;
 		if (src[count] == '\0') {
 			break;
 		}
@@ -241,18 +275,22 @@ void IntToChar(unsigned int* src, unsigned int* dest, unsigned int size)
 
 BOOL Strcmp(const unsigned int* s1, const unsigned int* s2, unsigned int size)
 {
-	int i;
+	unsigned int i;
+	unsigned int c1, c2;
+
 	for (i=0; i<size; i++) {
-		if (s1[i]=='\0' && s2[i]=='\0') {
+		c1 = s1[i] & 0xff;
+		c2 = s2[i] & 0xff;
+		if (c1=='\0' && c2=='\0') {
 			return TRUE;
 		}
-		else if (s1[i]=='\0' && s2[i]!='\0') {
+		else if (c1=='\0' && c2!='\0') {
 			return FALSE;
 		}
-		else if (s1[i]!='\0' && s2[i]=='\0') {
+		else if (c1!='\0' && c2=='\0') {
 			return FALSE;
 		}
-		else if (s1[i]-s2[i] != 0) {
+		else if (c1-c2 != 0) {
 			return FALSE;
 		}
 	}
@@ -291,6 +329,13 @@ unsigned int Mod(unsigned int dividend, unsigned divider)
 	return dividend;
 }
 
+
+void Sleep(unsigned int num){
+	while (num--){
+		asm("nop");
+	}
+}
+
 unsigned int ReadChar()
 {
 	unsigned int a0;
@@ -298,16 +343,31 @@ unsigned int ReadChar()
 	asm ("sw $ra, 0($sp)");
 
 	asm ("add $v0, $zero, 12");
-	asm ("syscall");
+	// asm ("syscall");
 	asm ("add %0, $zero, $a0":"=r"(a0));
-
+/*
+	if (a0 == 0x1f0){
+		do{
+			asm ("add $v0, $zero, 12");
+			asm("syscall");
+			Sleep(10);
+			asm ("add %0, $zero, $a0":"=r"(a0));
+		} while(a0 != 0);
+		asm ("lw $ra, 0($sp)");
+		asm ("addiu $sp, $sp, 4");
+		return 0x100;
+	}
+*/		
 	asm ("lw $ra, 0($sp)");
 	asm ("addiu $sp, $sp, 4");
 	return a0;
 }
 
-void PrintChar(unsigned int c)
+void PrintChar(unsigned int c, unsigned int color)
 {
+	c &= 0xff;
+	c += color;
+
 	asm ("addiu $sp, $sp, -4");
 	asm ("sw $ra, 0($sp)");
 
@@ -319,8 +379,14 @@ void PrintChar(unsigned int c)
 	asm ("addiu $sp, $sp, 4");
 }
 
-void PrintString(unsigned int* str)
+void PrintString(unsigned int* str, unsigned int color)
 {
+	int i;
+
+	for (i=0; str[i] != '\0'; i++){
+		str[i] &= 0xff;
+		str[i] += color;
+	}
 	asm ("addiu $sp, $sp, -4");
 	asm ("sw $ra, 0($sp)");
 
@@ -372,11 +438,14 @@ void SplitName(unsigned int* file_name, unsigned int* name, unsigned int* extens
 
 void SectionRead(unsigned int section_number)
 {
+	if (file_info->current_sector == section_number
+		&& file_info->is_valid == 1)	{
+		return;
+	}
 	asm ("addiu $sp, $sp, -4");
 	asm ("sw $ra, 0($sp)");
 
 	asm ("add $a0, $zero, %0"::"r"(section_number));
-	asm ("add $a1, $zero, $zero");
 	asm ("add $v0, $zero, 14");
 	asm ("syscall");
 
@@ -390,12 +459,38 @@ void SectionWrite(unsigned int section_number)
 	asm ("sw $ra, 0($sp)");
 
 	asm ("add $a0, $zero, %0"::"r"(section_number));
-	asm ("add $a1, $zero, $zero");
 	asm ("add $v0, $zero, 15");
 	asm ("syscall");
 
 	asm ("lw $ra, 0($sp)");
 	asm ("addiu $sp, $sp, 4");
+}
+
+void ClearScreen()
+{
+	unsigned int i;
+	unsigned int* char_device = (unsigned int*)CHAR_DEVICE;
+	unsigned int* gpio = (unsigned int*)GPIO;
+
+	*char_device = 0;
+	*(char_device+1) = 0;
+	
+	asm ("sll $t0, %0, 16"::"r"(*char_device));
+	asm ("sll $t1, %0, 10"::"r"(*(char_device+1)));
+	asm ("add $t0, $t0, $t1");
+	asm ("sw $t0, 0(%0)"::"r"(gpio));
+
+	for (i=0; i<1200; i++) {
+		PrintChar(' ', 0);
+	}
+
+	*char_device = 0;
+	*(char_device+1) = 0;
+	
+	asm ("sll $t0, %0, 16"::"r"(*char_device));
+	asm ("sll $t1, %0, 10"::"r"(*(char_device+1)));
+	asm ("add $t0, $t0, $t1");
+	asm ("sw $t0, 0(%0)"::"r"(gpio));
 }
 
 void OpenFile(unsigned int* file_name, unsigned int flag, unsigned int mode)
@@ -428,8 +523,8 @@ void OpenFile(unsigned int* file_name, unsigned int flag, unsigned int mode)
 	}
 	// if cannot find the file
 	if (i == 32) {
-		PrintString(error);
-		PrintChar(ENTER+0x700);
+		PrintString(error, 0x400);
+		PrintChar(ENTER, 0x700);
 		file_info->current_sector = 0xff;
 		file_info->read_write_head = 0;
 		file_info->size = 0;
@@ -524,10 +619,10 @@ void Dir()
 			if (Strcmp(item_name, empty, 8)==FALSE) {
 				item_name[8] = '\0';
 				item_extension[3] = '\0';
-				PrintString(item_name);
-				PrintChar('.');
-				PrintString(item_extension);
-				PrintChar(ENTER+0x700);
+				PrintString(item_name, 0x200);
+				PrintChar('.', 0x200);
+				PrintString(item_extension, 0x200);
+				PrintChar(ENTER, 0x700);
 			}
 			item++;
 		}
@@ -536,7 +631,7 @@ void Dir()
 
 void Type(unsigned int* argv[])
 {
-	int i, j;
+	unsigned int i, j;
 	char* file = (char*)FILE_BUFFER;
 	unsigned int sum_sectors;
 	unsigned short fat_sector, next_sector;
@@ -549,13 +644,13 @@ void Type(unsigned int* argv[])
 	for (i=0; i<sum_sectors; i++) {
 		if (i == sum_sectors-1) {
 			for (j=0; j<file_info->size; j++) {
-				PrintChar(*(unsigned int*)(file+(j>>2)));
+				PrintChar(*(unsigned int*)(file+(j>>2)), 0x700);
 				//PrintChar(file[j]);
 			}
 		}
 		else {
 			for (j=0; j<512; j++) {
-				PrintChar(*(unsigned int*)(file+(j>>2)));
+				PrintChar(*(unsigned int*)(file+(j>>2)), 0x700);
 				//PrintChar(file[j]);
 			}
 			fat_sector = file_info->current_sector >> 8; // divide by 256
@@ -571,7 +666,7 @@ void Type(unsigned int* argv[])
 			file_info->read_write_head = 0;
 		}
 	}
-	PrintChar(ENTER+0x700);
+	PrintChar(ENTER, 0x700);
 }
 
 void Rename(unsigned int* argv[])
@@ -613,8 +708,8 @@ void Rename(unsigned int* argv[])
 	}
 	// if cannot find the file
 	if (i == 32) {
-		PrintString(error);
-		PrintChar(ENTER+0x700);
+		PrintString(error, 0x400);
+		PrintChar(ENTER, 0x700);
 		file_info->current_sector = 0;
 		file_info->read_write_head = 0;
 		file_info->size = 0;
@@ -715,8 +810,8 @@ void Del(unsigned int* argv[])
 	}
 	// if cannot find the file
 	if (i == 32) {
-		PrintString(error);
-		PrintChar(ENTER+0x700);
+		PrintString(error, 0x400);
+		PrintChar(ENTER, 0x700);
 		file_info->current_sector = 0;
 		file_info->read_write_head = 0;
 		file_info->size = 0;
@@ -912,10 +1007,23 @@ clear:
 //	}
 //}
 
+void Lougb()
+{
+	unsigned int s[23];
+	s[0] = 0x780; s[1] = 's' + 0x700 ; s[2] = 'i' + 0x700 ; s[3] = 'r' + 0x700 ; s[4] = ',' + 0x700 ;
+	s[5] = 'G' + 0x700; s[6] = 'o' + 0x700; s[7] = 'o' + 0x700;  s[8] = 'd' + 0x700;; s[9] = ' ' + 0x700 ; 
+	s[10] = 'B' + 0x700; s[11] = 'y' + 0x700 ; s[12] = 'e' + 0x700; s[13] = '\0';
+
+	// 楼sir，Good Bye
+
+	PrintString(s, 0x700);
+	PrintChar(ENTER, 0x700);
+}
+
 void Lou()
 {
 	unsigned int s[23];
-	s[0] = 0x80; s[1] = 's' + 0x700 ; s[2] = 'i' + 0x700 ; s[3] = 'r' + 0x700 ; s[4] = ',' + 0x700 ;
+	s[0] = 0x780; s[1] = 's' + 0x700 ; s[2] = 'i' + 0x700 ; s[3] = 'r' + 0x700 ; s[4] = ',' + 0x700 ;
 	s[5] = 0x7ab; s[6] = 0x7d0; s[7] = ' ' + 0x700 ; // 楼sir，你好
 	s[8] = ENTER+0x700;
 	s[9] = 0x784; s[10] = 0x785; s[11] = 0x786;// 魏世嘉
@@ -927,8 +1035,8 @@ void Lou()
 	s[20] = 0x78b; s[21] = 0x7f2;// 孙同
 	s[22] = '\0';
 
-	PrintString(s);
-	PrintChar(ENTER+0x700);
+	PrintString(s, 0x700);
+	PrintChar(ENTER, 0x700);
 }
 
 //void Exit()
@@ -937,36 +1045,106 @@ void Lou()
 //	*exit = 1;
 //}
 
+unsigned int getCode(unsigned int scanCode)
+{
+	/* 131 scanCode decode*/
+	unsigned int DecodeBig[] = { 0x20, 	/* we do not have scan code as 0x00 */
+		0x108, 	0x20,	0x104, 	0x102, 	0x100, 	0x101, 	0x10b, 	0x20, 	0x109, 	0x107,
+		0x105, 	0x103, 	0x09, 	0x7e, 	0x20, 	0x20, 	0x121, 	0x115, 	0x20, 	0x116,
+		0x51, 	0x21, 	0x20, 	0x20, 	0x20, 	0x5a, 	0x53, 	0x41, 	0x57, 	0x29,
+		0x117,	0x20, 	0x43, 	0x58, 	0x44, 	0x45, 	0x24, 	0x23, 	0x117,	0x20,
+		0x20, 	0x56, 	0x46, 	0x54, 	0x52, 	0x25, 	0x114, 	0x20, 	0x4e,	0x42,
+		0x48, 	0x47, 	0x59,	0x5e, 	0x20, 	0x20, 	0x20, 	0x4d, 	0x4a,	0x55,
+		0x26, 	0x2a, 	0x20, 	0x20,	0x3c, 	0x4b, 	0x49, 	0x4f,	0x2a, 	0x28,
+		0x20, 	0x20, 	0x3e, 	0x3f, 	0x4c,	0x3a, 	0x50, 	0x5f, 	0x20,	0x20,
+		0x20, 	0x22, 	0x20, 	0x7b, 	0x2b, 	0x20,	0x20, 	0x14, 	0x115, 	0x0d,
+		0x7d, 	0x20, 	0x7c, 	0x20, 	0x20, 	0x20, 	0x20,	0x20, 	0x20, 	0x20,
+		0x20, 	0x08, 	0x20, 	0x20, 	0x119, 	0x20, 	0x10E, 	0x118, 	0x20, 	0x20,
+		0x20, 	0x11C, 	0x2e, 	0x10D, 	0x10F, 	0x20, 	0x10C, 	0x1b, 	0x120,	0x10A,
+		0x2b, 	0x111, 	0x2d, 	0x2a, 	0x110, 	0x20, 	0x20, 	0x20, 	0x20, 	0x20,
+		0x106
+	};
+
+	unsigned int DecodeLittle[] = { 0x20, 	/* we do not have scan code as 0x00 */
+		0x108, 	0x20,	0x104, 	0x102, 	0x100, 	0x101, 	0x10b, 	0x20, 	0x109, 	0x107,
+		0x105, 	0x103, 	0x09, 	0x60, 	0x20, 	0x20, 	0x121, 	0x115, 	0x20, 	0x116,
+		0x71, 	0x31, 	0x20, 	0x20, 	0x20, 	0x7a, 	0x73, 	0x61, 	0x77, 	0x32,
+		0x117,	0x20, 	0x63, 	0x78, 	0x64, 	0x65, 	0x34, 	0x33, 	0x117,	0x20,
+		0x20, 	0x76, 	0x66, 	0x74, 	0x72, 	0x35, 	0x114, 	0x20, 	0x6e,	0x62,
+		0x68, 	0x67, 	0x79,	0x36, 	0x20, 	0x20, 	0x20, 	0x6d, 	0x6a,	0x75,
+		0x37, 	0x38, 	0x20, 	0x20,	0x2c, 	0x6b, 	0x69, 	0x6f,	0x30, 	0x39,
+		0x20, 	0x20, 	0x2e, 	0x2f, 	0x6c,	0x3b, 	0x70, 	0x2d, 	0x20,	0x20,
+		0x20, 	0x27, 	0x20, 	0x5b, 	0x3d, 	0x20,	0x20, 	0x14, 	0x115, 	0x0d,
+		0x5d, 	0x20, 	0x5c, 	0x20, 	0x20, 	0x20, 	0x20,	0x20, 	0x20, 	0x20,
+		0x20, 	0x08, 	0x20, 	0x20, 	0x119, 	0x20, 	0x10E, 	0x118, 	0x20, 	0x20,
+		0x20, 	0x11C, 	0x2e, 	0x10D, 	0x10F, 	0x20, 	0x10C, 	0x1b, 	0x120,	0x10A,
+		0x2b, 	0x111, 	0x2d, 	0x2a, 	0x110, 	0x20, 	0x20, 	0x20, 	0x20, 	0x20,
+		0x106
+	};
+
+	if (scanCode > 0x100 && scanCode <= 0x183){
+		if (*(unsigned int *)CAPSON == 1){
+			return DecodeBig[scanCode - 0x100];		
+		}
+		else
+			return DecodeLittle[scanCode - 0x100];	 			
+	}
+	else return 0x00;
+}
+
 void ReadLine(unsigned int* line)
 {
-	unsigned int c;
-	int count = 0;
+	unsigned int c, ch;
+	unsigned int count = 0;
+	unsigned int lineLimit[] = {'T' + 0x700, 'o' + 0x700, 'o' + 0x700, ' ' + 0x700, 
+							'L' + 0x700, 'o' + 0x700, 'n' + 0x700, 'g' + 0x700, '!' + 0x700, '\0'};
 	while (1) {
-		c = ReadChar();
-		
-		switch (c) {
-			case '\0':
-				break;
-			case ENTER:
-				line[count] = '\0';
-				return;
-				break;
-			case BACK_SPACE:
-				line[--count] = '\0';
-				break;
-			default:
-				PrintChar(c|0x700);
-				if (c>=20 && c<=0xfe) {
-					line[count++] = c;
-				}
-				break;
+		c = ReadChar();				// ScanCode
+		if (c == 0x1e0) continue;
+
+		ch = getCode(c);
+		if (ch & 0x100) 
+			continue;
+			// TODO: control key undecoded
+		if ( ch != 0xf0 ){
+			switch (ch) {
+				case '\0':
+					break;
+				case CAPSLOCK:
+					// PrintInt(*(unsigned int *)CAPSON);
+					*(unsigned int *)CAPSON = !*(unsigned int *)CAPSON;
+					// PrintInt(*(unsigned int *)CAPSON);
+					break; 
+				case ENTER:
+					line[count] = '\0';
+					PrintChar(ENTER, 0x400);
+					return;
+					break;
+				case BACK_SPACE:
+					// PrintInt(count);
+					if (count > 0) {
+						line[--count] = '\0';
+						// PrintInt(count);	
+						PrintChar(BACK_SPACE, 0);	
+						 //asm ("syscall");
+					}
+					break;
+					// asm ("syscall");
+				default:
+					PrintChar(ch, 0x700);
+					if (ch >= 20 && ch <= 0xfe) {
+						line[count++] = ch;
+					}
+					break;
+			}	
 		}
+		
 		// command buffer is full
 		if (count == 25) {
 			line[0] = '\0';
-			PrintChar(ENTER+0x700);
-			PrintString(error);
-			PrintChar(ENTER+0x700);
+			PrintChar(ENTER, 0x700);
+			PrintString(lineLimit, 0x400);
+			PrintChar(ENTER, 0x700);
 			return;
 		}
 	}
@@ -977,7 +1155,7 @@ void GetParameter(unsigned int* command, int* argc, unsigned int** argv)
 	int i;
 	int flag = 0;
 
-	*argc = 0;
+	*argc = 0;	
 	for (i=0;;i++) {
 		if (*argc == 3) {
 			break;
@@ -1006,8 +1184,16 @@ void GetParameter(unsigned int* command, int* argc, unsigned int** argv)
 
 void Execute(unsigned int argc, unsigned int* argv[])
 {
-	char* file = (char*)FILE_BUFFER;
 	int i;
+	unsigned int cmd_clr[] = {'c', 'l', 'r', '\0'};
+	unsigned int cmd_lougb[] = {'l', 'o', 'u', 'g', 'b', '\0'};
+
+	// for (i =0 ;i<argc; i++){
+	// 	PrintChar(ENTER);
+	// 	PrintString(argv[i]);
+	// 	PrintChar('W' + 0x700);
+	// 	PrintChar(ENTER);
+	// }
 
 	if (Strcmp(argv[0], cmd_dir, 4) == TRUE) {
 		Dir();
@@ -1024,6 +1210,9 @@ void Execute(unsigned int argc, unsigned int* argv[])
 	else if (Strcmp(argv[0], cmd_touch, 6) == TRUE) {
 		Touch(argv);
 	}
+	else if (Strcmp(argv[0], cmd_clr, 4) == TRUE) {
+		ClearScreen();
+	}
 //	else if (Strcmp(argv[0], cmd_exec, 5) == TRUE) {
 //		Exec(argv);
 //	}
@@ -1033,9 +1222,12 @@ void Execute(unsigned int argc, unsigned int* argv[])
 	else if (Strcmp(argv[0], cmd_lou, 4) == TRUE) {
 		Lou();
 	}
+	else if (Strcmp(argv[0], cmd_lougb, 6) == TRUE){
+		Lougb();
+	}
 	else {
-		PrintString(error);
-		PrintChar(ENTER+0x700);
+		PrintString(error, 0x400);
+		PrintChar(ENTER, 0x700);
 	}
 }
 
@@ -1053,8 +1245,11 @@ int main()
 		for (i=0; i<25; i++) {
 			command[i] = '\0';
 		}
-		PrintString(console);
+		PrintString(console, 0x200);
 		ReadLine(command);
+		// PrintString(command);
+		// PrintChar('E' + 0x700);
+		// PrintChar(ENTER);
 		GetParameter(command, &argc, argv);
 		Execute(argc, argv);
 	}

@@ -24,12 +24,10 @@
 // constant
 #define TEXT_WIDTH 40
 #define TEXT_HEIGHT 30
-// vga_control
-#define VGA_IDLE 0
-#define VGA_OUTPUT 1
 // key_code
 #define BACK_SAPCE 0x08
 #define ENTER 0x0d
+#define CAPSLOCK   0x14
 // file operation
 #define FILE_IDLE 0
 #define SECTION_READ 1
@@ -48,6 +46,8 @@
 #define CMD_LOU (CMD_EXEC+20)
 #define HEX (CMD_LOU+16)
 #define CHAR_DEVICE (HEX+64)
+#define KEYF0IN		(CHAR_DEVICE + 8)
+#define CAPSON 		(KEYF0IN + 4)
 
 typedef struct{
 	unsigned int x, y;
@@ -56,7 +56,8 @@ typedef struct{
 typedef struct{
 	unsigned short current_sector;
 	unsigned short read_write_head;
-	unsigned int size;
+	unsigned short size;
+	unsigned short is_valid;
 }FileInfo;
 
 
@@ -67,6 +68,8 @@ extern void Strcpy(unsigned int* dest, unsigned int* src, unsigned int size);
 extern unsigned int Multiply(unsigned int a, unsigned int b);
 
 extern unsigned int Mod(unsigned int dividend, unsigned divider);
+
+extern FileInfo* file_info;
 
 extern int main();
 
@@ -148,7 +151,7 @@ void sys_PrintChar(unsigned int a0)
 	cursor.y = *(char_device + 1);
 
 
-	if (a0-0x700>=20 && a0-0x700<=0xff) {
+	if ((a0 & 0xff) >= 20 && (a0 & 0xff) <= 0xff) {
 		*(vram + Multiply(TEXT_WIDTH, cursor.x) + cursor.y) = a0;
 		cursor.y++;
 		if (cursor.y == TEXT_WIDTH) {
@@ -186,7 +189,7 @@ void sys_PrintChar(unsigned int a0)
 			//*gpio += 0x400;
 		}
 	}
-	else if (a0-0x700 == BACK_SAPCE) {
+	else if ((a0 & 0xff) == BACK_SAPCE) {
 		if (cursor.y != 0) {
 			--cursor.y;
 			*(vram + Multiply(TEXT_WIDTH, cursor.x) + cursor.y) = 0;
@@ -213,7 +216,7 @@ void sys_PrintChar(unsigned int a0)
 			//*gpio += 0x00009c00;
 		}
 	}
-	else if (a0-0x700 == ENTER) {
+	else if ((a0 & 0xff) == ENTER) {
 		//*gpio &= 0xffff03ff;
 		*(char_device+1) = 0;
 		if (cursor.x == TEXT_HEIGHT-1) {
@@ -246,11 +249,16 @@ void sys_PrintInt(unsigned int a0)
 	char c;
 	for (i=0; i<8; i++) {
 		c = (a0&0xf0000000) >> 28;
-		sys_PrintChar(hex[c]);
+		sys_PrintChar(hex[c]+0x700);
 		a0 = a0 << 4;
 	}
 }
 
+/**
+ * This is a syscalll function
+ * The syscall read a Word from 0x00007f04 to 0x00007f3c
+ * And move the return it with $a0
+ */
 void sys_ReadChar()
 {
 	unsigned int* kb_buffer = (unsigned int*)KB_BUFFER;
@@ -296,28 +304,35 @@ void sys_ReadChar()
 // }
 
 /*---将发送的字符存在串口地址高位---*/
-void Sendchar(int  C)
+void Sendchar(unsigned int  C)
 {
-	*(int *)COMADR=C;
+	*(unsigned int *)COMADR=C;
 	return ;
 }
 
 //发送请求并接受一个block
 void sys_Recv(unsigned int block)
 {
-	unsigned int end;
 	unsigned int blocks;
-	end=(unsigned int)('#') ;
-	Sendchar((unsigned int) ('!'));
+	unsigned int* vram = (unsigned int*)VRAM;
+	volatile unsigned int* com = (unsigned int*)COMADR;
+	*(vram + 0x100) = 0x461;
+	*com = (unsigned int)'!';
+	*(vram + 0x104) = 0x462;
 	while(1)
 	{
 		// 把数字拆成8进制
 		blocks = block & 0x00000007;
 		block = block >> 3;
-		Sendchar(blocks);
+		*(unsigned int *)COMADR= (unsigned int)blocks;
 		if (block<=0)break;
 	}
-	Sendchar(end);  
+	*(vram + 0x108) = 0x463;
+	*com = (unsigned int)'#';
+	*(vram + 0x10c) = 0x464;
+	file_info->is_valid = 0;
+	file_info->current_sector = block;
+
 }
 
 //发送一个block至pc端
@@ -329,17 +344,18 @@ void sys_Sendblock(unsigned int block)
 	unsigned int BlockOffset;
 	unsigned int blocks;
 	unsigned int shift_number;
+	volatile unsigned int* com = (unsigned int*)COMADR;
 	BlockOffset=0;
 
-	Sendchar((unsigned int) ('*'));
+	*com = (unsigned int)'*';
 	while(1)
 	{
 		blocks = block & 0x00000007;
 		block = block >> 3;
-		Sendchar(blocks);
+		*com = blocks;
 		if (block<=0)break;
 	}
-	Sendchar((unsigned int) ('#'));
+	*com = (unsigned int)'#';
 	for(;BlockOffset<512;)
 	{
 		aword=0;
@@ -362,6 +378,7 @@ void Syscall()
 {
 	unsigned int syscall_code;
 	unsigned int a0, a1, a2;
+	unsigned int* vram = (unsigned int*)VRAM;
 
 	// get parameters
 	asm ("add %0, $zero, $a2":"=r"(a2));
@@ -388,10 +405,12 @@ void Syscall()
 		// case WRITE:
 		// 	sys_Write((unsigned short)a0, (unsigned short)a1);
 		// 	break;
-		case SendIns:
+		case READ:
+			*(vram + 0x104) = 0x261;
 			sys_Recv(a0);
+			*(vram + 0x118) = 0x262;
 			break;
-		case SendBlock:
+		case WRITE:
 			sys_Sendblock(a0);
 			break;
 		default:
@@ -412,21 +431,57 @@ void Uart()
 	asm ("sw $ra, 16($sp)");
 
 
-	int WOffset;               //第几个word
-	int BOffset;                //word中的第几个byte
-	int BlockOffset;
-	unsigned int aword=0;    //一个字
-	if (*(int*)OFFSET == 512) {
-		*(int*)OFFSET=0;
-	}
-	BlockOffset = *(int*)OFFSET;
-	*(int *)OFFSET = *(int*)OFFSET+1;
-	WOffset = BlockOffset >> 2;            
-	BOffset = BlockOffset & 0x00000003;          
+	unsigned int WOffset, i;               //第几个word
+	unsigned int BOffset;                //word中的第几个byte
+	unsigned int BlockOffset;
+	volatile unsigned int aword=0;    //一个字
+	unsigned int* vram = (unsigned int*)VRAM;
+	volatile unsigned int temp;
 
-	aword = *(unsigned int*)COMADR >> (BOffset<<3);
-	*(int*)(FILE_BUFFER+WOffset) = aword+*(int*)(FILE_BUFFER+WOffset); 
 
+	*(vram + 0x100 - 1) = 0x461;
+	for (i=0; i<512; i++){
+		WOffset = i >> 2;            
+		BOffset = i & 0x00000003; 
+     	
+		aword = *(unsigned int*)COMADR;
+		*(unsigned int*)COMADR = aword;
+		aword -= 0x100;
+		// aword &= 0xff;
+		*(vram + 0x100 + i) = (aword | 0x200);
+		switch (BOffset) {
+			case 0:
+				aword <<= 24;
+				temp = 0x00ffffff;
+				// asm ("lui $s0, 0xff");
+				// asm ("andi $s0, 0xffff");
+				// asm ("and %0, %1, $s0":"r"():""();
+				*(unsigned int*)(FILE_BUFFER+WOffset) &= temp;
+				break;
+			case 1:
+				aword <<= 16;
+				*(unsigned int*)(FILE_BUFFER+WOffset) &= 0xff00ffff;
+				break;
+			case 2:
+				aword <<= 8;
+				*(unsigned int*)(FILE_BUFFER+WOffset) &= 0xffff00ff;
+			break;
+			case 3:
+				*(unsigned int*)(FILE_BUFFER+WOffset) &= 0xffffff00;
+			break;
+		}
+				
+		aword |= *(unsigned int*)(FILE_BUFFER+WOffset);
+		*(unsigned int*)(FILE_BUFFER+WOffset) = aword;
+		*(vram + 0x300 + i) = *(unsigned int*)(FILE_BUFFER+WOffset);
+	} 
+	*(vram + 0x100 + i) = 0x461;
+	file_info->is_valid = 1;
+
+
+
+	
+	
 	asm ("lw $a0, 0($sp)");
 	asm ("lw $a1, 4($sp)");
 	asm ("lw $v0, 8($sp)");
@@ -451,6 +506,18 @@ void Ps2()
 	end = (*kb_buffer) & 0x0000ffff;
 	c = *(unsigned int*)KEY_CODE;
 
+	if (c == 0x1f0 ) {
+		*(unsigned int *)KEYF0IN = 1;
+		goto ps2_rtn;	
+	}
+	else if (*(unsigned int *)KEYF0IN == 1){
+		*(unsigned int *)KEYF0IN = 0;
+		goto ps2_rtn;		
+	}
+	else {
+		*(unsigned int *)KEYF0IN = 0;
+	}
+		
 	*(kb_buffer+1+end) = c;
 	end++;
 	if (end == KB_BUFFER_SIZE){
@@ -459,6 +526,7 @@ void Ps2()
 	*(kb_buffer) &= 0xffff0000;
 	*(kb_buffer) += end;
 
+ps2_rtn:
 	asm ("lw $a0, 0($sp)");
 	asm ("lw $a1, 4($sp)");
 	asm ("lw $v0, 8($sp)");

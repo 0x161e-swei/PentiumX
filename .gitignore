@@ -1,6 +1,9 @@
 *.o
 *.txt
 *.exe
+*.elf
+*.bin
+Software/Virtual*
 
 
 # Windows image file caches
