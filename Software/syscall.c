@@ -10,8 +10,6 @@
 #define SendIns 23    //syscall_code
 #define SendBlock 25    //syscall_code
 // mipscom
-#define OFFSET 0x00007a08     //存
-// 数据时的偏移量
 #define COMADR 0xfe000000     //串口地址
 // address
 #define KB_BUFFER 0x00007f00
@@ -134,11 +132,11 @@ asm ("nop");asm ("nop");asm ("nop");asm ("nop");asm ("nop");
 asm ("nop");asm ("nop");asm ("nop");asm ("nop");asm ("nop");
 asm ("nop");asm ("nop");asm ("nop");asm ("nop");asm ("nop");
 
-
+extern void Sleep(unsigned int time);
 
 void RollScreen()
 {
-	int i,j;
+	unsigned int i,j;
 	unsigned int* vram = (unsigned int*)VRAM;
 
 	// copy from next raw to current raw
@@ -252,7 +250,7 @@ void sys_PrintChar(unsigned int a0)
 
 void sys_PrintString(unsigned int* str)
 {
-	int i;
+	unsigned int i;
 
 	for (i=0; str[i] != '\0'; i++){
 		sys_PrintChar(str[i]);
@@ -261,8 +259,8 @@ void sys_PrintString(unsigned int* str)
 
 void sys_PrintInt(unsigned int a0)
 {
-	int i;
-	char c;
+	unsigned int i;
+	unsigned int c;
 	for (i=0; i<8; i++) {
 		c = (a0&0xf0000000) >> 28;
 		sys_PrintChar(hex[c]+0x700);
@@ -331,12 +329,13 @@ void sys_Recv(unsigned int block)
 {
 	unsigned int blocks;
 	unsigned int* vram = (unsigned int*)VRAM;
+	volatile unsigned int* com = (unsigned int*)COMADR;
 	// asm("syscall");asm("syscall");asm("syscall");
 	file_info->current_sector = block;
 	// asm("syscall");asm("syscall");asm("syscall");
 	file_info->is_valid = 0;
 	// asm("syscall");asm("syscall");asm("syscall");
-	volatile unsigned int* com = (unsigned int*)COMADR;
+
 	// TODO: whatever
 	// *(vram + 0x100) = 0x461;
 	*com = (unsigned int)'!';
@@ -355,6 +354,9 @@ void sys_Recv(unsigned int block)
 		if (block<=0)break;
 	}
 	// *(vram + 0x108) = 0x463;
+	asm ("nop");
+	asm ("nop");
+	asm ("nop");
 	*com = (unsigned int)'#';
 	// *(vram + 0x10c) = 0x464;
 	// *(vram + 0x110) = 0x400 | block;
@@ -365,9 +367,10 @@ void sys_Recv(unsigned int block)
 //发送一个block至pc端
 void sys_Sendblock(unsigned int block)
 {
+	unsigned int i, j;
 	unsigned int WOffset;               //第几个word
 	unsigned int BOffset;                //word中的第几个byte
-	unsigned int aword=0;            //一个word
+	unsigned int aword;            //一个word
 	unsigned int BlockOffset;
 	unsigned int blocks;
 	unsigned int shift_number;
@@ -383,21 +386,30 @@ void sys_Sendblock(unsigned int block)
 		if (block<=0)break;
 	}
 	*com = (unsigned int)'#';
-	for(;BlockOffset<512;)
+
+	// for (i=0; i<512; i+=4) {
+	// 	aword = *(unsigned int*)(FILE_BUFFER+i);
+	// 	for (j=0; j<4; j+=1) {
+	// 		*com = aword & 0xff;
+	// 		aword >>= 8;
+	// 	}
+	// }
+	for(i=0;i<512;i++)
 	{
 		aword=0;
-		WOffset=BlockOffset >> 2;            
-		BOffset=BlockOffset & 0x00000003;          
+		WOffset = i >> 2;            
+		BOffset = i & 0x00000003;          
 
-		shift_number = (3-BOffset)<<3;
-		aword = *(unsigned int*)(FILE_BUFFER+WOffset);
+		shift_number = BOffset << 3;
+		aword = *((unsigned int*)(FILE_BUFFER)+WOffset);
 		while (shift_number){
 			aword >>= 1;
 			shift_number--;
 		}
 		//aword= *(unsigned int* )(FILE_BUFFER+WOffset)>>((3-BOffset)<<3);
-		Sendchar(aword);
-		BlockOffset++;
+		*(unsigned int *)COMADR = aword;
+		//Sendchar(aword);
+		//BlockOffset++;
 	}
 }
 
@@ -488,11 +500,11 @@ void Uart()
 
 	// asm ("sw $t0, 2416(%0)"::"r"((unsigned int*)VRAM));
 
-	unsigned int WOffset, i;               //第几个word
-	unsigned int BOffset;                //word中的第几个byte
+	unsigned int WOffset;               //第几个word
+	unsigned int BOffset, i;                //word中的第几个byte
 	unsigned int BlockOffset;
-	volatile unsigned int aword=0;    //一个字
-	unsigned int* vram = (unsigned int*)VRAM;
+	volatile unsigned int aword;// = 0;    //一个字
+	// unsigned int* vram = (unsigned int*)VRAM;
 	volatile unsigned int temp;
 
 
@@ -500,43 +512,52 @@ void Uart()
 	for (i=0; i<512; i++){
 		WOffset = i >> 2;            
 		BOffset = i & 0x00000003; 
-     	
+     	asm ("syscall");asm ("syscall");asm ("syscall");
 		aword = *(unsigned int*)COMADR;
+		asm ("syscall");asm ("syscall");asm ("syscall");
+		asm("nop");
+		asm("nop");
+		asm("nop");
+		asm("nop");
 		asm("nop");
 		asm("nop");
 		// *(unsigned int*)COMADR = aword;
-		aword -= 0x100;
-		// aword &= 0xff;
-		// *(vram + 0x210 + i) = (aword | 0x400);
-		switch (BOffset) {
-			case 0:
-				aword <<= 24;
-				temp = 0x00ffffff;
-				// asm ("lui $s0, 0xff");
-				// asm ("andi $s0, 0xffff");
-				// asm ("and %0, %1, $s0":"r"():""();
-				*(unsigned int*)(FILE_BUFFER+WOffset) &= temp;
+		if (aword & 0x100){
+			aword &= 0xff;
+			// *(vram + 0x210 + i) = (aword + 0x480);
+			switch (BOffset) {
+				case 3:
+					aword <<= 24;
+					temp = 0x00ffffff;
+					// asm ("lui $s0, 0xff");
+					// asm ("andi $s0, 0xffff");
+					// asm ("and %0, %1, $s0":"r"():""();
+					*((unsigned int*)(FILE_BUFFER)+WOffset) &= temp;
+					break;
+				case 2:
+					aword <<= 16;
+					*((unsigned int*)(FILE_BUFFER)+WOffset) &= 0xff00ffff;
+					break;
+				case 1:
+					aword <<= 8;
+					*((unsigned int*)(FILE_BUFFER)+WOffset) &= 0xffff00ff;
 				break;
-			case 1:
-				aword <<= 16;
-				*(unsigned int*)(FILE_BUFFER+WOffset) &= 0xff00ffff;
+				case 0:
+					*((unsigned int*)(FILE_BUFFER)+WOffset) &= 0xffffff00;
 				break;
-			case 2:
-				aword <<= 8;
-				*(unsigned int*)(FILE_BUFFER+WOffset) &= 0xffff00ff;
-			break;
-			case 3:
-				*(unsigned int*)(FILE_BUFFER+WOffset) &= 0xffffff00;
-			break;
+			}
+			asm("nop");
+			asm("nop");		
+			aword |= *((unsigned int*)(FILE_BUFFER)+WOffset);
+			*((unsigned int*)(FILE_BUFFER)+WOffset) = aword;
 		}
-		asm("nop");
-		asm("nop");		
-		aword |= *(unsigned int*)(FILE_BUFFER+WOffset);
-		*(unsigned int*)(FILE_BUFFER+WOffset) = aword;
+		else i--;
+		// aword &= 0xff;
+		
 		// *(vram + 0x240) = 0x262;
 		// *(vram + 0x244 + i) = *(unsigned int*)(FILE_BUFFER+WOffset);
 	} 
-	// *(vram + 0x210 + i) = 0x461;\
+	// *(vram + 0x210 + i) = 0x461;
 	// TODO: 
 	// asm ("add $t7, $zero, %0"::"r"(file_info->is_valid + 0x480));
 	// asm ("sw $t7, 2420(%0)"::"r"((unsigned int*)VRAM));
@@ -626,27 +647,27 @@ void Timer()
 
 int IntEntry()
 {
-	asm ("mfc0 $t0, $13");
-	asm ("addi $t1, $zero, 1");
-	asm ("bne $t0, $t1, after_syscall");
+	asm ("mfc0 $k0, $13");
+	asm ("addi $k1, $zero, 1");
+	asm ("bne $k0, $k1, after_syscall");
 	asm ("j Syscall");
 
 
 	asm ("after_syscall:");
-	asm ("addi $t1, $zero, 2");
-	asm ("bne $t0, $t1, after_uart");
+	asm ("addi $k1, $zero, 2");
+	asm ("bne $k0, $k1, after_uart");
 	asm ("j  Uart");
 
 
 	asm ("after_uart:");
-	asm ("addi $t1, $zero, 4");
-	asm ("bne $t0, $t1, after_ps2");
+	asm ("addi $k1, $zero, 4");
+	asm ("bne $k0, $k1, after_ps2");
 	asm ("j  Ps2");
 
 
 	asm ("after_ps2:");
-	asm ("addi $t1, $zero, 8");
-	asm ("bne $t0, $t1, after_timer");
+	asm ("addi $k1, $zero, 8");
+	asm ("bne $k0, $k1, after_timer");
 	asm ("j  Timer");
 
 
