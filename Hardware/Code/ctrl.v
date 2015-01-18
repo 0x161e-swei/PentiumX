@@ -355,12 +355,14 @@ module 		ctrl(
 					
 					6'b001101: begin 												//Ori  
 						`CPU_ctrl_signals 	<= 17'h00050;
+						Signext 			<= 1;
 						ALU_operation 		<= OR;
 						state 				<= EX_I;
 					end
 					
 					6'b001110: begin 												//Xori 
 						`CPU_ctrl_signals 	<= 17'h00050;
+						Signext 			<= 1;
 						ALU_operation  		<= XOR;
 						state 				<= EX_I;
 					end

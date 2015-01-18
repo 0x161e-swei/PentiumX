@@ -69,7 +69,7 @@ extern unsigned int Multiply(unsigned int a, unsigned int b);
 
 extern unsigned int Mod(unsigned int dividend, unsigned divider);
 
-extern FileInfo* file_info;
+extern volatile FileInfo* file_info;
 
 extern int main();
 
@@ -87,6 +87,27 @@ asm ("nop");asm ("nop");asm ("nop");asm ("nop");asm ("nop");
 asm ("nop");asm ("nop");asm ("nop");asm ("nop");asm ("nop");
 asm ("nop");asm ("nop");asm ("nop");asm ("nop");asm ("nop");
 
+
+asm ("nop");asm ("nop");asm ("nop");asm ("nop");asm ("nop");
+asm ("nop");asm ("nop");asm ("nop");asm ("nop");asm ("nop");
+asm ("nop");asm ("nop");asm ("nop");asm ("nop");asm ("nop");
+asm ("nop");asm ("nop");asm ("nop");asm ("nop");asm ("nop");
+asm ("nop");asm ("nop");asm ("nop");asm ("nop");asm ("nop");
+asm ("nop");asm ("nop");asm ("nop");asm ("nop");asm ("nop");
+asm ("nop");asm ("nop");asm ("nop");asm ("nop");asm ("nop");
+asm ("nop");asm ("nop");asm ("nop");asm ("nop");asm ("nop");
+asm ("nop");asm ("nop");asm ("nop");asm ("nop");asm ("nop");
+asm ("nop");asm ("nop");asm ("nop");asm ("nop");asm ("nop");
+asm ("nop");asm ("nop");asm ("nop");asm ("nop");asm ("nop");
+asm ("nop");asm ("nop");asm ("nop");asm ("nop");asm ("nop");
+asm ("nop");asm ("nop");asm ("nop");asm ("nop");asm ("nop");
+asm ("nop");asm ("nop");asm ("nop");asm ("nop");asm ("nop");
+asm ("nop");asm ("nop");asm ("nop");asm ("nop");asm ("nop");
+asm ("nop");asm ("nop");asm ("nop");asm ("nop");asm ("nop");
+asm ("nop");asm ("nop");asm ("nop");asm ("nop");asm ("nop");
+asm ("nop");asm ("nop");asm ("nop");asm ("nop");asm ("nop");
+asm ("nop");asm ("nop");asm ("nop");asm ("nop");asm ("nop");
+asm ("nop");asm ("nop");asm ("nop");asm ("nop");asm ("nop");
 asm ("nop");asm ("nop");asm ("nop");asm ("nop");asm ("nop");
 asm ("nop");asm ("nop");asm ("nop");asm ("nop");asm ("nop");
 asm ("nop");asm ("nop");asm ("nop");asm ("nop");asm ("nop");
@@ -112,13 +133,8 @@ asm ("nop");asm ("nop");asm ("nop");asm ("nop");asm ("nop");
 asm ("nop");asm ("nop");asm ("nop");asm ("nop");asm ("nop");
 asm ("nop");asm ("nop");asm ("nop");asm ("nop");asm ("nop");
 asm ("nop");asm ("nop");asm ("nop");asm ("nop");asm ("nop");
-asm ("nop");asm ("nop");asm ("nop");asm ("nop");asm ("nop");
-asm ("nop");asm ("nop");asm ("nop");asm ("nop");asm ("nop");
-asm ("nop");asm ("nop");asm ("nop");asm ("nop");asm ("nop");
-asm ("nop");asm ("nop");asm ("nop");asm ("nop");asm ("nop");
-asm ("nop");asm ("nop");asm ("nop");asm ("nop");asm ("nop");
-asm ("nop");asm ("nop");asm ("nop");asm ("nop");asm ("nop");
-asm ("nop");asm ("nop");asm ("nop");asm ("nop");asm ("nop");
+
+
 
 void RollScreen()
 {
@@ -315,23 +331,34 @@ void sys_Recv(unsigned int block)
 {
 	unsigned int blocks;
 	unsigned int* vram = (unsigned int*)VRAM;
+	// asm("syscall");asm("syscall");asm("syscall");
+	file_info->current_sector = block;
+	// asm("syscall");asm("syscall");asm("syscall");
+	file_info->is_valid = 0;
+	// asm("syscall");asm("syscall");asm("syscall");
 	volatile unsigned int* com = (unsigned int*)COMADR;
-	*(vram + 0x100) = 0x461;
+	// TODO: whatever
+	// *(vram + 0x100) = 0x461;
 	*com = (unsigned int)'!';
-	*(vram + 0x104) = 0x462;
+	// *(vram + 0x104) = 0x462;
+	// *(vram + 0x106) = 0x400 | block;
 	while(1)
 	{
 		// 把数字拆成8进制
-		blocks = block & 0x00000007;
-		block = block >> 3;
-		*(unsigned int *)COMADR= (unsigned int)blocks;
+		blocks = block & 0x000000ff;
+		block = block >> 8;
+		// asm("syscall");asm("syscall");asm("syscall");
+		*com = (unsigned int)blocks;
+		// asm("syscall");asm("syscall");asm("syscall");
+		// asm("syscall");asm("syscall");asm("syscall");
+		// asm("syscall");asm("syscall");asm("syscall");
 		if (block<=0)break;
 	}
-	*(vram + 0x108) = 0x463;
+	// *(vram + 0x108) = 0x463;
 	*com = (unsigned int)'#';
-	*(vram + 0x10c) = 0x464;
-	file_info->is_valid = 0;
-	file_info->current_sector = block;
+	// *(vram + 0x10c) = 0x464;
+	// *(vram + 0x110) = 0x400 | block;
+	
 
 }
 
@@ -350,8 +377,8 @@ void sys_Sendblock(unsigned int block)
 	*com = (unsigned int)'*';
 	while(1)
 	{
-		blocks = block & 0x00000007;
-		block = block >> 3;
+		blocks = block & 0x000000ff;
+		block = block >> 8;
 		*com = blocks;
 		if (block<=0)break;
 	}
@@ -406,9 +433,9 @@ void Syscall()
 		// 	sys_Write((unsigned short)a0, (unsigned short)a1);
 		// 	break;
 		case READ:
-			*(vram + 0x104) = 0x261;
+			// *(vram + 0x124) = 0x261;
 			sys_Recv(a0);
-			*(vram + 0x118) = 0x262;
+			// *(vram + 0x128) = 0x262;
 			break;
 		case WRITE:
 			sys_Sendblock(a0);
@@ -423,13 +450,43 @@ void Syscall()
 
 void Uart()
 {
-	asm ("addiu $sp, $sp, -20");
+	asm ("addiu $sp, $sp, -68");
 	asm ("sw $a0, 0($sp)");
 	asm ("sw $a1, 4($sp)");
 	asm ("sw $v0, 8($sp)");
 	asm ("sw $v1, 12($sp)");
-	asm ("sw $ra, 16($sp)");
+	asm ("sw $t0, 16($sp)");
+	asm ("sw $t1, 20($sp)");
+	asm ("sw $t2, 24($sp)");
+	asm ("sw $t3, 28($sp)");
+	asm ("sw $t4, 32($sp)");
+	asm ("sw $t5, 36($sp)");
+	asm ("sw $t6, 40($sp)");
+	asm ("sw $t7, 44($sp)");
+	asm ("sw $t8, 48($sp)");
+	asm ("sw $t9, 52($sp)");
+	asm ("sw $a2, 56($sp)");
+	asm ("sw $a3, 60($sp)");
+	asm ("sw $ra, 64($sp)");
 
+	// asm ("srl $t0, $sp, 0");
+	// asm ("addi $t0, $t0, 0x780");
+	// asm ("sw $sp, 2400(%0)"::"r"((unsigned int*)VRAM));
+
+	// asm ("srl $t0, $sp, 8");
+	// asm ("addi $t0, $t0, 0x780");
+	// asm ("sw $t0, 2408(%0)"::"r"((unsigned int*)VRAM));
+
+	// asm ("srl $t0, $sp, 16");
+	// asm ("addi $t0, $t0, 0x780");
+	// asm ("sw $t0, 2412(%0)"::"r"((unsigned int*)VRAM));
+
+	// asm ("srl $t0, $sp, 24");
+	// asm ("addi $t0, $t0, 0x780");
+	// asm ("sw $t0, 2416(%0)"::"r"((unsigned int*)VRAM));
+
+
+	// asm ("sw $t0, 2416(%0)"::"r"((unsigned int*)VRAM));
 
 	unsigned int WOffset, i;               //第几个word
 	unsigned int BOffset;                //word中的第几个byte
@@ -439,16 +496,18 @@ void Uart()
 	volatile unsigned int temp;
 
 
-	*(vram + 0x100 - 1) = 0x461;
+	// *(vram + 0x210 - 1) = 0x461;
 	for (i=0; i<512; i++){
 		WOffset = i >> 2;            
 		BOffset = i & 0x00000003; 
      	
 		aword = *(unsigned int*)COMADR;
-		*(unsigned int*)COMADR = aword;
+		asm("nop");
+		asm("nop");
+		// *(unsigned int*)COMADR = aword;
 		aword -= 0x100;
 		// aword &= 0xff;
-		*(vram + 0x100 + i) = (aword | 0x200);
+		// *(vram + 0x210 + i) = (aword | 0x400);
 		switch (BOffset) {
 			case 0:
 				aword <<= 24;
@@ -470,24 +529,48 @@ void Uart()
 				*(unsigned int*)(FILE_BUFFER+WOffset) &= 0xffffff00;
 			break;
 		}
-				
+		asm("nop");
+		asm("nop");		
 		aword |= *(unsigned int*)(FILE_BUFFER+WOffset);
 		*(unsigned int*)(FILE_BUFFER+WOffset) = aword;
-		*(vram + 0x300 + i) = *(unsigned int*)(FILE_BUFFER+WOffset);
+		// *(vram + 0x240) = 0x262;
+		// *(vram + 0x244 + i) = *(unsigned int*)(FILE_BUFFER+WOffset);
 	} 
-	*(vram + 0x100 + i) = 0x461;
+	// *(vram + 0x210 + i) = 0x461;\
+	// TODO: 
+	// asm ("add $t7, $zero, %0"::"r"(file_info->is_valid + 0x480));
+	// asm ("sw $t7, 2420(%0)"::"r"((unsigned int*)VRAM));
 	file_info->is_valid = 1;
+	// asm ("add $t7, $zero, %0"::"r"(file_info->is_valid + 0x480));
+	// asm ("sw $t7, 2428(%0)"::"r"((unsigned int*)VRAM));
 
 
 
-	
-	
 	asm ("lw $a0, 0($sp)");
 	asm ("lw $a1, 4($sp)");
 	asm ("lw $v0, 8($sp)");
 	asm ("lw $v1, 12($sp)");
-	asm ("lw $ra, 16($sp)");
-	asm ("addiu $sp, $sp, 20");
+	asm ("lw $t0, 16($sp)");
+	asm ("lw $t1, 20($sp)");
+	asm ("lw $t2, 24($sp)");
+	asm ("lw $t3, 28($sp)");
+	asm ("lw $t4, 32($sp)");
+	asm ("lw $t5, 36($sp)");
+	asm ("lw $t6, 40($sp)");
+	asm ("lw $t7, 44($sp)");
+	asm ("lw $t8, 48($sp)");
+	asm ("lw $t9, 52($sp)");
+	asm ("lw $a2, 56($sp)");
+	asm ("lw $a3, 60($sp)");
+	asm ("lw $ra, 64($sp)");
+	
+	// asm ("lw $a0, 0($sp)");
+	// asm ("lw $a1, 4($sp)");
+	// asm ("lw $v0, 8($sp)");
+	// asm ("lw $v1, 12($sp)");
+	// asm ("lw $ra, 16($sp)");
+	asm ("addiu $sp, $sp, 68");
+	asm ("addiu $sp, $sp, 8");
 	asm ("eret");
 }
 
@@ -537,7 +620,9 @@ ps2_rtn:
 }
 
 void Timer()
-{}
+{
+	asm ("eret");	
+}
 
 int IntEntry()
 {

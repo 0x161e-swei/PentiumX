@@ -94,8 +94,10 @@ unsigned int* cmd_touch;
 unsigned int* cmd_exec;
 unsigned int* cmd_lou;
 unsigned int* hex;
-FileInfo* file_info;
+volatile FileInfo* file_info;
 void ClearScreen();
+void PrintInt(unsigned int i);
+void SectionWrite(unsigned int section_number);
 
 void Initial()
 {
@@ -121,8 +123,7 @@ void Initial()
 	// initial global variable
 	// *(int* ) POINTER=0;
 	//enable Int
-	asm ("addi 	$t0,	$zero,	0xff");
-	asm ("mtc0	$t0,	$11"); 
+
 
 
 	hex = (unsigned int*)HEX;
@@ -166,6 +167,9 @@ void Initial()
 	cmd_lou[0] = 'l'  ; cmd_lou[1] = 'o'  ; cmd_lou[2] = 'u'  ; cmd_lou[3] = '\0'; 
 
 	file_info = (FileInfo*)FILE_INFO;
+
+	asm ("addi 	$t0,	$zero,	0xff");
+	asm ("mtc0	$t0,	$11"); 
 
 }
 
@@ -338,12 +342,14 @@ void Sleep(unsigned int num){
 
 unsigned int ReadChar()
 {
-	unsigned int a0;
+	unsigned int a0;//, sp, ra;
 	asm ("addiu $sp, $sp, -4");
 	asm ("sw $ra, 0($sp)");
-
+	// asm ("add %0, $zero, $ra":"=r"(ra));
+	// asm ("add %0, $zero, $sp":"=r"(sp));
+	// PrintInt(ra);
 	asm ("add $v0, $zero, 12");
-	// asm ("syscall");
+	asm ("syscall");
 	asm ("add %0, $zero, $a0":"=r"(a0));
 /*
 	if (a0 == 0x1f0){
@@ -438,12 +444,22 @@ void SplitName(unsigned int* file_name, unsigned int* name, unsigned int* extens
 
 void SectionRead(unsigned int section_number)
 {
-	if (file_info->current_sector == section_number
-		&& file_info->is_valid == 1)	{
-		return;
-	}
 	asm ("addiu $sp, $sp, -4");
 	asm ("sw $ra, 0($sp)");
+
+	if (file_info->current_sector == section_number
+		&& file_info->is_valid == 1)	{
+		// PrintChar('D', 0x700);
+		// PrintInt(section_number);
+		// PrintChar('D', 0x700);
+		return;
+	}
+	if (file_info->is_valid == 1)
+		SectionWrite(file_info->current_sector);
+
+	// PrintChar('n', 0x400);
+	// PrintInt(section_number);
+	// PrintChar('n', 0x400);
 
 	asm ("add $a0, $zero, %0"::"r"(section_number));
 	asm ("add $v0, $zero, 14");
@@ -608,11 +624,29 @@ void Dir()
 	unsigned int empty[1];
 	empty[0] = 0;
 	
-	int i,j;
+	unsigned int i,j;
 	// search in catalog
 	for (i=0; i<32; i++) {
 		SectionRead(CATALOG_OFFSET+i);
+		// asm("syscall");
+		// 		asm("syscall");
+		// 				asm("syscall");
+		// 						asm("syscall");
+		// PrintInt(CATALOG_OFFSET+i);
+		// TODO: DEBUG
+		// PrintChar('h', 0x100);
+		// PrintInt(file_info->is_valid);
+		// PrintChar('h', 0x100);
+		while(!((file_info->is_valid == 1) 
+			&& (file_info->current_sector == CATALOG_OFFSET+i))){
+			Sleep(1000000);
+			// PrintInt(file_info->is_valid);
+		};
+		// asm("syscall");		asm("syscall");		asm("syscall");		
 		item = (CatalogItem*)FILE_BUFFER;
+		// for(i = 0; i < 128; i++)
+		// 	PrintInt(*(unsigned int*)(FILE_BUFFER + i));
+
 		for (j=0; j<16; j++) {
 			CharToInt((unsigned int*)item, item_name, 8);
 			CharToInt((unsigned int*)item+2, item_extension, 4);
@@ -1233,7 +1267,7 @@ void Execute(unsigned int argc, unsigned int* argv[])
 
 int main()
 {
-	asm ("addiu $sp, $zero, 0x3f68");
+	asm ("addiu $sp, $zero, 0x6f68");
 	unsigned int command[25];
 	int i;
 	int argc;
