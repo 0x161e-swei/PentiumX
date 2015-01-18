@@ -59,8 +59,6 @@ typedef struct{
 }FileInfo;
 
 
-extern unsigned int* hex;
-
 extern void Strcpy(unsigned int* dest, unsigned int* src, unsigned int size);
 
 extern unsigned int Multiply(unsigned int a, unsigned int b);
@@ -171,10 +169,10 @@ void sys_PrintChar(unsigned int a0)
 		if (cursor.y == TEXT_WIDTH) {
 			*(char_device + 1) = 0;
 		
-			asm ("sll $t0, %0, 16"::"r"(*char_device));
-			asm ("sll $t1, %0, 10"::"r"(*(char_device+1)));
-			asm ("add $t0, $t0, $t1");
-			asm ("sw $t0, 0(%0)"::"r"(gpio));
+			asm ("sll $k0, %0, 16"::"r"(*char_device));
+			asm ("sll $k1, %0, 10"::"r"(*(char_device+1)));
+			asm ("add $k0, $k0, $k1");
+			asm ("sw $k0, 0(%0)"::"r"(gpio));
 			
 			//*gpio &= 0xffff03ff;
 			cursor.x++;
@@ -184,10 +182,10 @@ void sys_PrintChar(unsigned int a0)
 			else {
 				// raw++
 				++(*char_device);
-				asm ("sll $t0, %0, 16"::"r"(*char_device));
-				asm ("sll $t1, %0, 10"::"r"(*(char_device+1)));
-				asm ("add $t0, $t0, $t1");
-				asm ("sw $t0, 0(%0)"::"r"(gpio));
+				asm ("sll $k0, %0, 16"::"r"(*char_device));
+				asm ("sll $k1, %0, 10"::"r"(*(char_device+1)));
+				asm ("add $k0, $k0, $k1");
+				asm ("sw $k0, 0(%0)"::"r"(gpio));
 
 				//*gpio += 0x10000;
 			}
@@ -195,10 +193,10 @@ void sys_PrintChar(unsigned int a0)
 		else {
 			// column++
 			++*(char_device+1);
-			asm ("sll $t0, %0, 16"::"r"(*char_device));
-			asm ("sll $t1, %0, 10"::"r"(*(char_device+1)));
-			asm ("add $t0, $t0, $t1");
-			asm ("sw $t0, 0(%0)"::"r"(gpio));
+			asm ("sll $k0, %0, 16"::"r"(*char_device));
+			asm ("sll $k1, %0, 10"::"r"(*(char_device+1)));
+			asm ("add $k0, $k0, $k1");
+			asm ("sw $k0, 0(%0)"::"r"(gpio));
 
 			//*gpio += 0x400;
 		}
@@ -208,10 +206,10 @@ void sys_PrintChar(unsigned int a0)
 			--cursor.y;
 			*(vram + Multiply(TEXT_WIDTH, cursor.x) + cursor.y) = 0;
 			--*(char_device+1);
-			asm ("sll $t0, %0, 16"::"r"(*char_device));
-			asm ("sll $t1, %0, 10"::"r"(*(char_device+1)));
-			asm ("add $t0, $t0, $t1");
-			asm ("sw $t0, 0(%0)"::"r"(gpio));
+			asm ("sll $k0, %0, 16"::"r"(*char_device));
+			asm ("sll $k1, %0, 10"::"r"(*(char_device+1)));
+			asm ("add $k0, $k0, $k1");
+			asm ("sw $k0, 0(%0)"::"r"(gpio));
 
 			//*gpio -= 0x400;
 		}
@@ -220,10 +218,10 @@ void sys_PrintChar(unsigned int a0)
 			--cursor.x;
 			*(vram + Multiply(TEXT_WIDTH, cursor.x) + cursor.y) = 0;
 			--*char_device;
-			asm ("sll $t0, %0, 16"::"r"(*char_device));
-			asm ("sll $t1, %0, 10"::"r"(*(char_device+1)));
-			asm ("add $t0, $t0, $t1");
-			asm ("sw $t0, 0(%0)"::"r"(gpio));
+			asm ("sll $k0, %0, 16"::"r"(*char_device));
+			asm ("sll $k1, %0, 10"::"r"(*(char_device+1)));
+			asm ("add $k0, $k0, $k1");
+			asm ("sw $k0, 0(%0)"::"r"(gpio));
 	
 			//*gpio -= 0x10000;
 			//*gpio &= 0xffff03ff;
@@ -240,10 +238,10 @@ void sys_PrintChar(unsigned int a0)
 			++*char_device;
 			//*gpio += 0x10000;
 		}
-		asm ("sll $t0, %0, 16"::"r"(*char_device));
-		asm ("sll $t1, %0, 10"::"r"(*(char_device+1)));
-		asm ("add $t0, $t0, $t1");
-		asm ("sw $t0, 0(%0)"::"r"(gpio));
+		asm ("sll $k0, %0, 16"::"r"(*char_device));
+		asm ("sll $k1, %0, 10"::"r"(*(char_device+1)));
+		asm ("add $k0, $k0, $k1");
+		asm ("sw $k0, 0(%0)"::"r"(gpio));
 
 	}
 }
@@ -263,7 +261,7 @@ void sys_PrintInt(unsigned int a0)
 	unsigned int c;
 	for (i=0; i<8; i++) {
 		c = (a0&0xf0000000) >> 28;
-		sys_PrintChar(hex[c]+0x700);
+		sys_PrintChar(*((unsigned int*)HEX+c)+0x700);
 		a0 = a0 << 4;
 	}
 }
@@ -328,12 +326,13 @@ void Sendchar(unsigned int  C)
 void sys_Recv(unsigned int block)
 {
 	unsigned int blocks;
-	unsigned int* vram = (unsigned int*)VRAM;
+	// unsigned int* vram = (unsigned int*)VRAM;
 	volatile unsigned int* com = (unsigned int*)COMADR;
+	// TODO DEBUG
 	// asm("syscall");asm("syscall");asm("syscall");
-	file_info->current_sector = block;
+	((FileInfo*)FILE_INFO)->current_sector = block;
 	// asm("syscall");asm("syscall");asm("syscall");
-	file_info->is_valid = 0;
+	((FileInfo*)FILE_INFO)->is_valid = 0;
 	// asm("syscall");asm("syscall");asm("syscall");
 
 	// TODO: whatever
@@ -367,15 +366,14 @@ void sys_Recv(unsigned int block)
 //发送一个block至pc端
 void sys_Sendblock(unsigned int block)
 {
-	unsigned int i, j;
+	unsigned int i;
 	unsigned int WOffset;               //第几个word
 	unsigned int BOffset;                //word中的第几个byte
 	unsigned int aword;            //一个word
-	unsigned int BlockOffset;
 	unsigned int blocks;
 	unsigned int shift_number;
 	volatile unsigned int* com = (unsigned int*)COMADR;
-	BlockOffset=0;
+	// BlockOffset=0;
 
 	*com = (unsigned int)'*';
 	while(1)
@@ -417,7 +415,8 @@ void Syscall()
 {
 	unsigned int syscall_code;
 	unsigned int a0, a1, a2;
-	unsigned int* vram = (unsigned int*)VRAM;
+	// TODO: VRAM DEBUG
+	// unsigned int* vram = (unsigned int*)VRAM;
 
 	// get parameters
 	asm ("add %0, $zero, $a2":"=r"(a2));
@@ -502,19 +501,25 @@ void Uart()
 
 	unsigned int WOffset;               //第几个word
 	unsigned int BOffset, i;                //word中的第几个byte
-	unsigned int BlockOffset;
-	volatile unsigned int aword;// = 0;    //一个字
+	// unsigned int BlockOffset;
+	static volatile unsigned int aword;// = 0;    //一个字
 	// unsigned int* vram = (unsigned int*)VRAM;
 	volatile unsigned int temp;
 
+	// TODO: 
+	// asm ("add $t7, $zero, %0"::"r"(((FileInfo*)FILE_INFO)->is_valid + 0x480));
+	// asm ("sw $t7, 2420(%0)"::"r"((unsigned int*)VRAM));
+	((FileInfo*)FILE_INFO)->is_valid = 1;
+	// asm ("add $t7, $zero, %0"::"r"(((FileInfo*)FILE_INFO)->is_valid + 0x480));
+	// asm ("sw $t7, 2428(%0)"::"r"((unsigned int*)VRAM));
 
 	// *(vram + 0x210 - 1) = 0x461;
 	for (i=0; i<512; i++){
 		WOffset = i >> 2;            
 		BOffset = i & 0x00000003; 
-     	asm ("syscall");asm ("syscall");asm ("syscall");
+     	// asm ("syscall");asm ("syscall");asm ("syscall");
 		aword = *(unsigned int*)COMADR;
-		asm ("syscall");asm ("syscall");asm ("syscall");
+		// asm ("syscall");asm ("syscall");asm ("syscall");
 		asm("nop");
 		asm("nop");
 		asm("nop");
@@ -558,12 +563,7 @@ void Uart()
 		// *(vram + 0x244 + i) = *(unsigned int*)(FILE_BUFFER+WOffset);
 	} 
 	// *(vram + 0x210 + i) = 0x461;
-	// TODO: 
-	// asm ("add $t7, $zero, %0"::"r"(file_info->is_valid + 0x480));
-	// asm ("sw $t7, 2420(%0)"::"r"((unsigned int*)VRAM));
-	file_info->is_valid = 1;
-	// asm ("add $t7, $zero, %0"::"r"(file_info->is_valid + 0x480));
-	// asm ("sw $t7, 2428(%0)"::"r"((unsigned int*)VRAM));
+
 
 
 
@@ -645,7 +645,7 @@ void Timer()
 	asm ("eret");	
 }
 
-int IntEntry()
+void IntEntry()
 {
 	asm ("mfc0 $k0, $13");
 	asm ("addi $k1, $zero, 1");
@@ -673,8 +673,8 @@ int IntEntry()
 
 	asm ("after_timer:");
 
-	//asm ("addi $t1, $zero, 16");
-	//asm ("bne $t0, $t1, after_error");
+	//asm ("addi $k1, $zero, 16");
+	//asm ("bne $k0, $k1, after_error");
 	//asm ("jal ");
 	//after_error:
 

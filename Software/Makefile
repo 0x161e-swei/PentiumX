@@ -14,10 +14,10 @@ $(FILE).elf:$(FILE).o boot.o
 	mips-mti-elf-ld -EL -T $(FILE).lds -o $(FILE).elf $(FILE).o boot.o
 
 boot.o:boot.c
-	mips-mti-elf-gcc -EL -fno-delayed-branch -mno-mad -O -G0 -fno-builtin -o boot.o -c boot.c
+	mips-mti-elf-gcc -EL -fno-delayed-branch -Wall -mno-mad -O -G0 -fno-builtin -o boot.o -c boot.c
 
 $(FILE).o:$(FILE).c
-	mips-mti-elf-gcc -EL -fno-delayed-branch -mno-mad -O -G0 -fno-builtin -o $(FILE).o -c $(FILE).c
+	mips-mti-elf-gcc -EL -fno-delayed-branch -Wall -mno-mad -O -G0 -fno-builtin -o $(FILE).o -c $(FILE).c
 
 $(FILE)s.o:$(FILE).s
 	mips-mti-elf-gcc -EL -fno-delayed-branch -O -G0 -fno-builtin -o $(FILE)s.o -c $(FILE).s

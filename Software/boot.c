@@ -62,7 +62,7 @@
 #define TEXT_HEIGHT 24
 #define TEXT_WIDTH 40
 
-typedef int BOOL;
+typedef unsigned int BOOL;
 
 typedef struct{
 	unsigned short current_sector;
@@ -122,6 +122,8 @@ void Initial()
 	// *(int* ) POINTER=0;
 	//enable Int
 
+
+
 	hex = (unsigned int*)HEX;
 	
 	hex[0]='0'+0x700;hex[1]='1'+0x700;hex[2]='2'+0x700;hex[3]='3'+0x700;
@@ -162,10 +164,8 @@ void Initial()
 	cmd_lou = (unsigned int*)CMD_LOU;
 	cmd_lou[0] = 'l'  ; cmd_lou[1] = 'o'  ; cmd_lou[2] = 'u'  ; cmd_lou[3] = '\0'; 
 
-	file_info = (FileInfo*)FILE_INFO;
-
-	asm ("addi 	$t0,	$zero,	0xff");
-	asm ("mtc0	$t0,	$11"); 
+	asm ("addi 	$fp,	$zero,	0xff");
+	asm ("mtc0	$fp,	$11"); 
 
 }
 
@@ -182,9 +182,9 @@ void CharToInt(unsigned int* src, unsigned int* dest, unsigned int size)
 {
 	unsigned int count=0;
 	while (1) {
-		asm ("srl $t7, %0, 0"::"r"(src[count>>2]));
-		asm ("andi $t7, $t7, 0xff");
-		asm ("sw $t7, 0(%0)"::"r"(dest+count));
+		asm ("srl $fp, %0, 0"::"r"(src[count>>2]));
+		asm ("andi $fp, $fp, 0xff");
+		asm ("sw $fp, 0(%0)"::"r"(dest+count));
 		//asm ("add %0, $t7, $zero":"=r"(dest[count]));
 		//dest[count] = src[count>>2]&0x000000ff;
 		if (dest[count] == '\0') {
@@ -194,9 +194,9 @@ void CharToInt(unsigned int* src, unsigned int* dest, unsigned int size)
 		if (count >= size) {
 			break;
 		}
-		asm ("srl $t7, %0, 8"::"r"(src[count>>2]));
-		asm ("andi $t7, $t7, 0xff");
-		asm ("sw $t7, 0(%0)"::"r"(dest+count));
+		asm ("srl $fp, %0, 8"::"r"(src[count>>2]));
+		asm ("andi $fp, $fp, 0xff");
+		asm ("sw $fp, 0(%0)"::"r"(dest+count));
 		//asm ("add %0, $t7, $zero":"=r"(dest[count]));
 		//dest[count] = (src[count>>2]&0x0000ff00)>>8;
 		if (dest[count] == '\0') {
@@ -206,10 +206,10 @@ void CharToInt(unsigned int* src, unsigned int* dest, unsigned int size)
 		if (count >= size) {
 			break;
 		}
-		asm ("srl $t7, %0, 16"::"r"(src[count>>2]));
-		asm ("andi $t7, $t7, 0xff");
-		asm ("sw $t7, 0(%0)"::"r"(dest+count));
-		//asm ("add %0, $t7, $zero":"=r"(dest[count]));
+		asm ("srl $fp, %0, 16"::"r"(src[count>>2]));
+		asm ("andi $fp, $fp, 0xff");
+		asm ("sw $fp, 0(%0)"::"r"(dest+count));
+		//asm ("add %0, $fp, $zero":"=r"(dest[count]));
 		//dest[count] = (src[count>>2]&0x00ff0000)>>16;
 		if (dest[count] == '\0') {
 			break;
@@ -218,9 +218,9 @@ void CharToInt(unsigned int* src, unsigned int* dest, unsigned int size)
 		if (count >= size) {
 			break;
 		}
-		asm ("srl $t7, %0, 24"::"r"(src[count>>2]));
-		asm ("andi $t7, $t7, 0xff");
-		asm ("sw $t7, 0(%0)"::"r"(dest+count));
+		asm ("srl $fp, %0, 24"::"r"(src[count>>2]));
+		asm ("andi $fp, $fp, 0xff");
+		asm ("sw $fp, 0(%0)"::"r"(dest+count));
 		//asm ("add %0, $t0, $zero":"=r"(dest[count]));
 		//dest[count] = (src[count>>2]&0xff000000)>>24;
 		if (dest[count] == '\0') {
@@ -233,57 +233,6 @@ void CharToInt(unsigned int* src, unsigned int* dest, unsigned int size)
 	}
 }
 
-
-// void CharToInt(unsigned int* src, unsigned int* dest, unsigned int size) 
-// {
-// 	unsigned int count=0;
-// 	while (1) {
-// 		asm ("srl $t0, %0, 24"::"r"(src[count>>2]));
-// 		asm ("andi $t0, $t0, 0xff");
-// 		asm ("add %0, $t0, $zero":"=r"(dest[count]));
-// 		//dest[count] = src[count>>2]&0x000000ff;
-// 		if (dest[count] == '\0') {
-// 			break;
-// 		}
-// 		count++;
-// 		if (count >= size) {
-// 			break;
-// 		}
-// 		asm ("srl $t0, %0, 16"::"r"(src[count>>2]));
-// 		asm ("andi $t0, $t0, 0xff");
-// 		asm ("add %0, $t0, $zero":"=r"(dest[count]));
-// 		//dest[count] = (src[count>>2]&0x0000ff00)>>8;
-// 		if (dest[count] == '\0') {
-// 			break;
-// 		}
-// 		count++;
-// 		if (count >= size) {
-// 			break;
-// 		}
-// 		asm ("srl $t0, %0, 8"::"r"(src[count>>2]));
-// 		asm ("andi $t0, $t0, 0xff");
-// 		asm ("add %0, $t0, $zero":"=r"(dest[count]));
-// 		//dest[count] = (src[count>>2]&0x00ff0000)>>16;
-// 		if (dest[count] == '\0') {
-// 			break;
-// 		}
-// 		count++;
-// 		if (count >= size) {
-// 			break;
-// 		}
-// 		asm ("srl $t0, %0, 0"::"r"(src[count>>2]));
-// 		asm ("andi $t0, $t0, 0xff");
-// 		asm ("add %0, $t0, $zero":"=r"(dest[count]));
-// 		//dest[count] = (src[count>>2]&0xff000000)>>24;
-// 		if (dest[count] == '\0') {
-// 			break;
-// 		}
-// 		count++;
-// 		if (count >= size) {
-// 			break;
-// 		}
-// 	}
-// }
 
 void IntToChar(unsigned int* src, unsigned int* dest, unsigned int size) 
 {
@@ -333,6 +282,10 @@ BOOL Strcmp(const unsigned int* s1, const unsigned int* s2, unsigned int size)
 {
 	unsigned int i;
 	unsigned int c1, c2;
+	// asm ("addiu $sp, $sp, -24");
+	// asm ("sw $v0, 0($sp)");
+	// asm ("sw $v1, 4($sp)");
+	// asm ("sw $v0, 8($sp)");
 
 	for (i=0; i<size; i++) {
 		c1 = s1[i] & 0xff;
@@ -498,29 +451,29 @@ void SplitName(unsigned int* file_name, unsigned int* name, unsigned int* extens
 
 void SectionRead(unsigned int section_number)
 {
-	asm ("addiu $sp, $sp, -4");
-	asm ("sw $ra, 0($sp)");
+	// asm ("addiu $sp, $sp, -4");
+	// asm ("sw $ra, 0($sp)");
 
-	if (file_info->current_sector == section_number
-		&& file_info->is_valid == 1)	{
+	if (((FileInfo*)FILE_INFO)->current_sector == section_number
+		&& ((FileInfo*)FILE_INFO)->is_valid == 1)	{
 		// PrintChar('D', 0x700);
 		// PrintInt(section_number);
 		// PrintChar('D', 0x700);
 		return;
 	}
-	if (file_info->is_valid == 1)
-		SectionWrite(file_info->current_sector);
+	if (((FileInfo*)FILE_INFO)->is_valid == 1)
+		SectionWrite(((FileInfo*)FILE_INFO)->current_sector);
 
-	// PrintChar('n', 0x400);
-	// PrintInt(section_number);
-	// PrintChar('n', 0x400);
 
 	asm ("add $a0, $zero, %0"::"r"(section_number));
 	asm ("add $v0, $zero, 14");
 	asm ("syscall");
-
-	asm ("lw $ra, 0($sp)");
-	asm ("addiu $sp, $sp, 4");
+	PrintChar('a', 0x400);
+	PrintInt(section_number);
+	PrintChar('a', 0x400);
+	PrintChar(ENTER, 0x700);
+	// asm ("lw $ra, 0($sp)");
+	// asm ("addiu $sp, $sp, 4");
 }
 
 void SectionWrite(unsigned int section_number)
@@ -545,10 +498,10 @@ void ClearScreen()
 	*char_device = 0;
 	*(char_device+1) = 0;
 	
-	asm ("sll $t0, %0, 16"::"r"(*char_device));
-	asm ("sll $t1, %0, 10"::"r"(*(char_device+1)));
-	asm ("add $t0, $t0, $t1");
-	asm ("sw $t0, 0(%0)"::"r"(gpio));
+	asm ("sll $fp, %0, 16"::"r"(*char_device));
+	asm ("sll $gp, %0, 10"::"r"(*(char_device+1)));
+	asm ("add $fp, $fp, $gp");
+	asm ("sw $fp, 0(%0)"::"r"(gpio));
 
 	for (i=0; i<1200; i++) {
 		PrintChar(' ', 0);
@@ -557,10 +510,10 @@ void ClearScreen()
 	*char_device = 0;
 	*(char_device+1) = 0;
 	
-	asm ("sll $t0, %0, 16"::"r"(*char_device));
-	asm ("sll $t1, %0, 10"::"r"(*(char_device+1)));
-	asm ("add $t0, $t0, $t1");
-	asm ("sw $t0, 0(%0)"::"r"(gpio));
+	asm ("sll $fp, %0, 16"::"r"(*char_device));
+	asm ("sll $gp, %0, 10"::"r"(*(char_device+1)));
+	asm ("add $fp, $fp, $gp");
+	asm ("sw $fp, 0(%0)"::"r"(gpio));
 }
 
 void OpenFile(unsigned int* file_name, unsigned int flag, unsigned int mode)
@@ -569,13 +522,13 @@ void OpenFile(unsigned int* file_name, unsigned int flag, unsigned int mode)
 	unsigned int name[9], extension[4];
 	unsigned int item_name[9], item_extension[4];
 	unsigned int i,j;
-	unsigned int current_sector, next_sector;
+	// unsigned int current_sector;
 
 	SplitName(file_name, name, extension);
 	// search in catalog
 	for (i=0; i<32; i++) {
 		SectionRead(CATALOG_OFFSET+i);
-		while(file_info->is_valid == 0) {
+		while(((FileInfo*)FILE_INFO)->is_valid == 0) {
 			//&& (file_info->current_sector == CATALOG_OFFSET+i))){
 			Sleep(100000);
 			// PrintInt(file_info->is_valid);
@@ -595,23 +548,23 @@ void OpenFile(unsigned int* file_name, unsigned int flag, unsigned int mode)
 	}
 	// if cannot find the file
 	
-	PrintString(error, 0x400);
+	PrintString((unsigned int*)ERROR, 0x400);
 	PrintChar(ENTER, 0x700);
-	file_info->read_write_head = 0;
-	file_info->size = 0;
+	((FileInfo*)FILE_INFO)->read_write_head = 0;
+	((FileInfo*)FILE_INFO)->size = 0;
 	return;
 
 open_find:
 	// set file_info
-	file_info->read_write_head = 0;
-	file_info->size = item->size;
+	((FileInfo*)FILE_INFO)->read_write_head = 0;
+	((FileInfo*)FILE_INFO)->size = item->size;
 	// read file
 
 	SectionRead(DATA_OFFSET+item->starting_sector-2);
-	while(file_info->is_valid == 0) {
-			//&& (file_info->current_sector == DATA_OFFSET+item->starting_sector-2))){
+	while(((FileInfo*)FILE_INFO)->is_valid == 0) {
+			//&& (((FileInfo*)FILE_INFO)->current_sector == DATA_OFFSET+item->starting_sector-2))){
 		Sleep(100000);
-			// PrintInt(file_info->is_valid);
+			// PrintInt(((FileInfo*)FILE_INFO)->is_valid);
 	}
 }
 
@@ -625,37 +578,37 @@ open_find:
 //	unsigned int sum_of_sectors;
 //
 //	// the last sector
-//	if (file_info->read_write_head+length > file_info->size) {
-//		length = file_info->size - file_info->read_write_head;
+//	if (((FileInfo*)FILE_INFO)->read_write_head+length > ((FileInfo*)FILE_INFO)->size) {
+//		length = ((FileInfo*)FILE_INFO)->size - ((FileInfo*)FILE_INFO)->read_write_head;
 //		for (i=0; i<length; i++) {
-//			buffer[i] = file[file_info->read_write_head++];
+//			buffer[i] = file[((FileInfo*)FILE_INFO)->read_write_head++];
 //		}
 //	}
 //	// cross sectors
-//	else if (file_info->read_write_head+length > 512) {
-//		length -= 512 - file_info->read_write_head;
-//		for (i=0; file_info->read_write_head<512; i++) {
-//			buffer[i] = file[file_info->read_write_head++];
+//	else if (((FileInfo*)FILE_INFO)->read_write_head+length > 512) {
+//		length -= 512 - ((FileInfo*)FILE_INFO)->read_write_head;
+//		for (i=0; ((FileInfo*)FILE_INFO)->read_write_head<512; i++) {
+//			buffer[i] = file[((FileInfo*)FILE_INFO)->read_write_head++];
 //		}
-//		fat_sector = file_info->current_sector >> 8; 
+//		fat_sector = ((FileInfo*)FILE_INFO)->current_sector >> 8; 
 //		// read FAT
 //		SectionRead(fat_sector+1);
-//		next_sector = *(unsigned short*)(file+((file_info->current_sector&0xff)<<1)); 
+//		next_sector = *(unsigned short*)(file+((((FileInfo*)FILE_INFO)->current_sector&0xff)<<1)); 
 //		// read file
 //		SectionRead(DATA_OFFSET+next_sector-2);
-//		file_info->current_sector = next_sector;
-//		file_info->read_write_head = 0;
-//		file_info->size -= 512;
+//		((FileInfo*)FILE_INFO)->current_sector = next_sector;
+//		((FileInfo*)FILE_INFO)->read_write_head = 0;
+//		((FileInfo*)FILE_INFO)->size -= 512;
 //		for (; length>0; length--) {
-//			buffer[i] = file[file_info->read_write_head];
-//			file_info->read_write_head++;
+//			buffer[i] = file[((FileInfo*)FILE_INFO)->read_write_head];
+//			((FileInfo*)FILE_INFO)->read_write_head++;
 //			i++;
 //		}
 //	}
 //	// simple case
 //	else {
 //		for (i=0; i<length; i++) {
-//			buffer[i] = file[file_info->read_write_head++];
+//			buffer[i] = file[((FileInfo*)FILE_INFO)->read_write_head++];
 //		}
 //	}
 //}
@@ -694,12 +647,14 @@ void Dir()
 		// PrintInt(CATALOG_OFFSET+i);
 		// TODO: DEBUG
 		// PrintChar('h', 0x100);
-		// PrintInt(file_info->is_valid);
+		// PrintInt(((FileInfo*)FILE_INFO)->is_valid);
 		// PrintChar('h', 0x100);
-		while(!((file_info->is_valid == 1) 
-			&& (file_info->current_sector == CATALOG_OFFSET+i))){
+		PrintInt(((FileInfo*)FILE_INFO)->is_valid);
+		while(!((((FileInfo*)FILE_INFO)->is_valid == 1) 
+			&& (((FileInfo*)FILE_INFO)->current_sector == CATALOG_OFFSET+i))){
 			Sleep(1000000);
-			// PrintInt(file_info->is_valid);
+			PrintInt(((FileInfo*)FILE_INFO)->is_valid);
+			// PrintInt(((FileInfo*)FILE_INFO)->is_valid);
 		};
 		// asm("syscall");		asm("syscall");		asm("syscall");		
 		item = (CatalogItem*)FILE_BUFFER;
@@ -731,13 +686,13 @@ void Type(unsigned int* argv[])
 
 	OpenFile(argv[1], 0, 0);
 
-	asm ("srl $fp, %0, 9"::"r"(file_info->size));
+	asm ("srl $fp, %0, 9"::"r"(((FileInfo*)FILE_INFO)->size));
 	asm ("addi %0, $fp, 1":"=r"(sum_sectors));
-	//sum_sectors = (file_info->size >> 9) + 1;
+	//sum_sectors = (((FileInfo*)FILE_INFO)->size >> 9) + 1;
 
 	for (i=0; i<sum_sectors; i++) {
 		if (i == sum_sectors-1) {
-			for (j=0; j<(file_info->size&0x1ff); j+=4) {
+			for (j=0; j<(((FileInfo*)FILE_INFO)->size&0x1ff); j+=4) {
 				c = *(unsigned int*)(file+j);
 				PrintChar(c, 0x700);
 				PrintChar(c>>8, 0x700);
@@ -748,6 +703,7 @@ void Type(unsigned int* argv[])
 		}
 		else {
 			for (j=0; j<512; j+=4) {
+				c = *(unsigned int*)(file+j);
 				PrintChar(c, 0x700);
 				PrintChar(c>>8, 0x700);
 				PrintChar(c>>16, 0x700);
@@ -755,30 +711,30 @@ void Type(unsigned int* argv[])
 				//PrintChar(*(unsigned int*)(file+(j>>2)), 0x700);
 			}
 
-			asm ("srl %0, %1, 8":"=r"(fat_sector):"r"(2+file_info->current_sector-DATA_OFFSET));
-			//fat_sector = (2+file_info->current_sector-DATA_OFFSET) >> 8; // divide by 256
+			asm ("srl %0, %1, 8":"=r"(fat_sector):"r"(2+((FileInfo*)FILE_INFO)->current_sector-DATA_OFFSET));
+			//fat_sector = (2+((FileInfo*)FILE_INFO)->current_sector-DATA_OFFSET) >> 8; // divide by 256
 
 			// read FAT
 			SectionRead(fat_sector+1);
-			while(!((file_info->is_valid == 1) 
-			&& (file_info->current_sector == fat_sector+1))){
+			while(!((((FileInfo*)FILE_INFO)->is_valid == 1) 
+			&& (((FileInfo*)FILE_INFO)->current_sector == fat_sector+1))){
 				Sleep(100000);
-				// PrintInt(file_info->is_valid);
+				// PrintInt(((FileInfo*)FILE_INFO)->is_valid);
 			};
 
-			asm ("andi $fp, %0, 0xff"::"r"(file_info->current_sector+2-DATA_OFFSET));
+			asm ("andi $fp, %0, 0xff"::"r"(((FileInfo*)FILE_INFO)->current_sector+2-DATA_OFFSET));
 			asm ("sll %0, $fp, 1":"=r"(offset));
 			next_sector = *(unsigned short*)(file+offset);
-			//next_sector = *(unsigned short*)(file+((file_info->current_sector&0xff)<<1));
+			//next_sector = *(unsigned short*)(file+((((FileInfo*)FILE_INFO)->current_sector&0xff)<<1));
 			// read file
 			SectionRead(DATA_OFFSET+next_sector-2);
-			while(!((file_info->is_valid == 1) 
-			&& (file_info->current_sector == DATA_OFFSET+next_sector-2))){
+			while(!((((FileInfo*)FILE_INFO)->is_valid == 1) 
+			&& (((FileInfo*)FILE_INFO)->current_sector == DATA_OFFSET+next_sector-2))){
 				Sleep(100000);
-				// PrintInt(file_info->is_valid);
+				// PrintInt(((FileInfo*)FILE_INFO)->is_valid);
 			};
 
-			file_info->read_write_head = 0;
+			((FileInfo*)FILE_INFO)->read_write_head = 0;
 		}
 	}
 	PrintChar(ENTER, 0x700);
@@ -799,20 +755,20 @@ void Rename(unsigned int* argv[])
 	// search in catalog
 	for (i=0; i<32; i++) {
 		SectionRead(CATALOG_OFFSET+i);
-		while(!((file_info->is_valid == 1) 
-			&& (file_info->current_sector == CATALOG_OFFSET+i))){
+		while(!((((FileInfo*)FILE_INFO)->is_valid == 1) 
+			&& (((FileInfo*)FILE_INFO)->current_sector == CATALOG_OFFSET+i))){
 				Sleep(100000);
-				// PrintInt(file_info->is_valid);
+				// PrintInt(((FileInfo*)FILE_INFO)->is_valid);
 		};
 		item = (CatalogItem*)FILE_BUFFER;
 		for (j=0; j<16; j++) {
 			CharToInt((unsigned int*)item, item_name, 8);
-			CharToInt((unsigned int*)item+2, item_extension, 4);
+			CharToInt((unsigned int*)item+2, item_extension, 3);
 			if (Strcmp(item_name, name, 8)==TRUE 
 				&& Strcmp(item_extension, extension, 3)==TRUE) {
 
 				IntToChar(new_name, new_item_name, 8);
-				IntToChar(new_extension, new_item_extension, 8);
+				IntToChar(new_extension, new_item_extension, 3);
 
 				*(unsigned int*)item = new_item_name[0];
 				*((unsigned int*)item+1) = new_item_name[1];
@@ -828,11 +784,11 @@ void Rename(unsigned int* argv[])
 	}
 	// if cannot find the file
 	if (i == 32) {
-		PrintString(error, 0x400);
+		PrintString((unsigned int*)ERROR, 0x400);
 		PrintChar(ENTER, 0x700);
-		file_info->current_sector = 0;
-		file_info->read_write_head = 0;
-		file_info->size = 0;
+		((FileInfo*)FILE_INFO)->current_sector = 0;
+		((FileInfo*)FILE_INFO)->read_write_head = 0;
+		((FileInfo*)FILE_INFO)->size = 0;
 		return;
 	}
 }
@@ -857,10 +813,11 @@ void Touch(unsigned int* argv[])
 	for (i=0; i<79; i++) {
 		SectionRead(1+i);
 		PrintInt(1+i);
-		while(file_info->is_valid == 0) {
-			//&& (file_info->current_sector == 1+i))){
+		PrintInt(((FileInfo*)FILE_INFO)->is_valid);
+		while(((FileInfo*)FILE_INFO)->is_valid == 0) {
+			//&& (((FileInfo*)FILE_INFO)->current_sector == 1+i))){
 				Sleep(100000);
-				// PrintInt(file_info->is_valid);
+				PrintInt(((FileInfo*)FILE_INFO)->is_valid);
 		};
 		for (j=0; j<512; j+=2) {
 			sector_number = *(unsigned short*)(file+j);
@@ -882,10 +839,10 @@ out:
 	for (i=0; i<32; i++) {
 		PrintInt(i);
 		SectionRead(CATALOG_OFFSET+i);
-		while(file_info->is_valid == 0){ 
-			//&& (file_info->current_sector == CATALOG_OFFSET+i))){
+		while(((FileInfo*)FILE_INFO)->is_valid == 0){ 
+			//&& (((FileInfo*)FILE_INFO)->current_sector == CATALOG_OFFSET+i))){
 				Sleep(100000);
-				// PrintInt(file_info->is_valid);
+				// PrintInt(((FileInfo*)FILE_INFO)->is_valid);
 		};
 		item = (CatalogItem*)FILE_BUFFER;
 		for (j=0; j<16; j++) {
@@ -929,10 +886,11 @@ void Del(unsigned int* argv[])
 	// search in catalog
 	for (i=0; i<32; i++) {
 		SectionRead(CATALOG_OFFSET+i);
-		while(!((file_info->is_valid == 1) 
-			&& (file_info->current_sector == CATALOG_OFFSET+i))){
+		PrintInt(((FileInfo*)FILE_INFO)->is_valid);
+		while(!((((FileInfo*)FILE_INFO)->is_valid == 1) 
+			&& (((FileInfo*)FILE_INFO)->current_sector == CATALOG_OFFSET+i))){
 				Sleep(100000);
-				// PrintInt(file_info->is_valid);
+				PrintInt(((FileInfo*)FILE_INFO)->is_valid);
 		};
 		item = (CatalogItem*)FILE_BUFFER;
 		for (j=0; j<16; j++) {
@@ -946,7 +904,7 @@ void Del(unsigned int* argv[])
 				*((unsigned int*)item+2) = 0;
 
 				item->size = 0;
-				file_info->current_sector = item->starting_sector;
+				// ((FileInfo*)FILE_INFO)->current_sector = item->starting_sector;
 				SectionWrite(CATALOG_OFFSET+i);
 				goto clear;
 			}
@@ -957,41 +915,41 @@ void Del(unsigned int* argv[])
 	}
 	// if cannot find the file
 	if (i == 32) {
-		PrintString(error, 0x400);
+		PrintString((unsigned int*)ERROR, 0x400);
 		PrintChar(ENTER, 0x700);
-		file_info->current_sector = 0;
-		file_info->read_write_head = 0;
-		file_info->size = 0;
+		((FileInfo*)FILE_INFO)->current_sector = 0;
+		((FileInfo*)FILE_INFO)->read_write_head = 0;
+		((FileInfo*)FILE_INFO)->size = 0;
 		return;
 	}
 	// clear FAT
 clear:
 	do {
-		file_sector = file_info->current_sector+2-DATA_OFFSET;
+		file_sector = item->starting_sector-2+DATA_OFFSET;
 		asm ("srl $fp, %0, 8"::"r"(file_sector));
 		asm ("addi %0, $fp, 1":"=r"(next_sector));
 		SectionRead(next_sector);
-		//SectionRead(1+(file_info->current_sector>>8));
-		while(file_info->is_valid == 0) { 
-			//&& (file_info->current_sector == 1+(file_info->current_sector>>8)))){
+		//SectionRead(1+(((FileInfo*)FILE_INFO)->current_sector>>8));
+		while(((FileInfo*)FILE_INFO)->is_valid == 0) { 
+			//&& (((FileInfo*)FILE_INFO)->current_sector == 1+(((FileInfo*)FILE_INFO)->current_sector>>8)))){
 				Sleep(100000);
-				// PrintInt(file_info->is_valid);
+				// PrintInt(((FileInfo*)FILE_INFO)->is_valid);
 		};
 
-		asm ("andi $t0, %0, 0xff"::"r"(file_sector));
-		asm ("sll %0, $t0, 1":"=r"(offset));
+		asm ("andi $fp, %0, 0xff"::"r"(file_sector));
+		asm ("sll %0, $fp, 1":"=r"(offset));
 
 		next_sector = *(unsigned short*)(file+offset);
 		*(unsigned short*)(file+offset) = 0;
-		//next_sector = *(unsigned short*)(file+((file_info->current_sector&0xff)<<1));
-		//*(unsigned short*)(file+((file_info->current_sector&0xff)<<1)) = 0;
+		//next_sector = *(unsigned short*)(file+((((FileInfo*)FILE_INFO)->current_sector&0xff)<<1));
+		//*(unsigned short*)(file+((((FileInfo*)FILE_INFO)->current_sector&0xff)<<1)) = 0;
 
-		SectionWrite(file_info->current_sector);
-		SectionWrite(file_info->current_sector+79);
+		SectionWrite(((FileInfo*)FILE_INFO)->current_sector);
+		SectionWrite(((FileInfo*)FILE_INFO)->current_sector+79);
 
-		// SectionWrite(1+(file_info->current_sector>>8));
-		// SectionWrite(80+(file_info->current_sector>>8));
-		file_info->current_sector = next_sector;
+		// SectionWrite(1+(((FileInfo*)FILE_INFO)->current_sector>>8));
+		// SectionWrite(80+(((FileInfo*)FILE_INFO)->current_sector>>8));
+		// ((FileInfo*)FILE_INFO)->current_sector = next_sector;
 	}
 	while (next_sector != 0xffff);
 }
@@ -1354,19 +1312,19 @@ void Execute(unsigned int argc, unsigned int* argv[])
 	// 	PrintChar(ENTER);
 	// }
 
-	if (Strcmp(argv[0], cmd_dir, 4) == TRUE) {
+	if (Strcmp(argv[0], (unsigned int*)CMD_DIR, 4) == TRUE) {
 		Dir();
 	}
-	else if (Strcmp(argv[0], cmd_type, 5) == TRUE) {
+	else if (Strcmp(argv[0], (unsigned int*)CMD_TYPE, 5) == TRUE) {
 		Type(argv);
 	}
-	else if (Strcmp(argv[0], cmd_rename, 4) == TRUE) {
+	else if (Strcmp(argv[0], (unsigned int*)CMD_RENAME, 4) == TRUE) {
 		Rename(argv);
 	}
-	else if (Strcmp(argv[0], cmd_del, 4) == TRUE) {
+	else if (Strcmp(argv[0], (unsigned int*)CMD_DEL, 4) == TRUE) {
 		Del(argv);
 	}
-	else if (Strcmp(argv[0], cmd_touch, 6) == TRUE) {
+	else if (Strcmp(argv[0], (unsigned int*)CMD_TOUCH, 6) == TRUE) {
 		Touch(argv);
 	}
 	else if (Strcmp(argv[0], cmd_clr, 4) == TRUE) {
@@ -1378,21 +1336,21 @@ void Execute(unsigned int argc, unsigned int* argv[])
 //	else if (Strcmp(argv[0], cmd_exit, 5) == TRUE) {
 //		Exit();
 //	}
-	else if (Strcmp(argv[0], cmd_lou, 4) == TRUE) {
+	else if (Strcmp(argv[0], (unsigned int*)CMD_LOU, 4) == TRUE) {
 		Lou();
 	}
 	else if (Strcmp(argv[0], cmd_lougb, 6) == TRUE){
 		Lougb();
 	}
 	else {
-		PrintString(error, 0x400);
+		PrintString((unsigned int*)ERROR, 0x400);
 		PrintChar(ENTER, 0x700);
 	}
 }
 
 int main()
 {
-	asm ("add $sp, $zero, %0"::"r"(0x7468));
+	asm ("add $sp, $zero, %0"::"r"(0x5f70));
 	unsigned int command[25];
 	unsigned int i;
 	unsigned int argc;
@@ -1404,7 +1362,7 @@ int main()
 		for (i=0; i<25; i++) {
 			command[i] = '\0';
 		}
-		PrintString(console, 0x200);
+		PrintString((unsigned int*)CONSOLE, 0x200);
 		ReadLine(command);
 		// PrintString(command);
 		// PrintChar('E' + 0x700);
