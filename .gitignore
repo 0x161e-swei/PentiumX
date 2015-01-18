@@ -3,6 +3,7 @@
 *.exe
 *.elf
 *.bin
+*.zip
 Software/Virtual*
 
 
