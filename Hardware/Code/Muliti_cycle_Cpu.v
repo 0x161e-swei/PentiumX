@@ -34,7 +34,9 @@ module Muliti_cycle_Cpu(
 						CPU_MIO,
 						state,
                         cpu_stb_o,
-                        intrrupt_en_o
+                        intrrupt_en_o,
+//                        Half_W,
+//                        Signext
 						);
 
 	input wire 			clk, reset, MIO_ready;
@@ -45,10 +47,11 @@ module Muliti_cycle_Cpu(
     output wire [31: 0] pc_out, Inst;	//test
 	output wire [31: 0] Addr_out, data_out;						
 	output wire [ 4: 0] state;
-	output wire 		mem_w, CPU_MIO;	
+	output wire 		mem_w, CPU_MIO;
+	//output wire 		Half_W, Signext;	
     output wire         cpu_stb_o, Iack;	// Bus requset and 
     output wire [31: 0] intrrupt_en_o;		// Interrupt acknowlegement
-    									
+    										
 
 	wire 		[31: 0] PC_Current;
 	wire 		[15: 0] imm;
@@ -98,6 +101,7 @@ module Muliti_cycle_Cpu(
 					.sysCause			(sysCause),
 					.WriteIen 			(WriteIen),
 					.Int_en 			(Int_en)
+					//.Half_W				(Half_W)
  					);
 
  		assign InTcause		= {gntIntOut, sysCause};				// TODO: to be precise

@@ -1,4 +1,4 @@
-FILE=Syscall
+FILE=zpc
 default:$(FILE).txt $(FILE).bin $(FILE)b.txt
 
 $(FILE)b.txt:$(FILE).bin
@@ -10,18 +10,11 @@ $(FILE).bin:$(FILE).elf
 $(FILE).txt:$(FILE).elf
 	mips-mti-elf-objdump -S -z -M no-aliases $(FILE).elf > $(FILE).txt
 
-$(FILE).elf:$(FILE).o boot.o
-	mips-mti-elf-ld -EL -T $(FILE).lds -o $(FILE).elf $(FILE).o boot.o
+$(FILE).elf:$(FILE).o 
+	mips-mti-elf-ld -EL -T $(FILE).lds -o $(FILE).elf $(FILE).o  
 
-boot.o:boot.c
-	mips-mti-elf-gcc -EL -fno-delayed-branch -Wall -O -G0 -fno-builtin -o boot.o -c boot.c
-
-$(FILE).o:$(FILE).c
-	mips-mti-elf-gcc -EL -fno-delayed-branch -Wall -O -G0 -fno-builtin -o $(FILE).o -c $(FILE).c
-
-
+$(FILE).o:$(FILE).c 
+	mips-mti-elf-gcc -EL -fno-delayed-branch -mno-mad -O0 -G0 -fno-builtin -o $(FILE).o -c $(FILE).c
 
 clean:
 	rm *.o
-	rm *.elf
-	rm *.bin

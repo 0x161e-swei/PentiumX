@@ -110,7 +110,7 @@ end
 
 assign rx_irq = full_rx & ~rx_iack;
 
-uart_fifo fifo_rx (
+uart_fifo_rx fifo_rx (
   .clk(sys_clk), // input clk
   .rst(sys_rst), // input rst
   .din(rx_data), // input [7 : 0] din
@@ -153,7 +153,7 @@ end
 
 
 
-uart_fifo fifo_tx (
+uart_fifo_tx fifo_tx (
   .clk(sys_clk), // input clk
   .rst(sys_rst), // input rst
   .din(tx_data), // input [7 : 0] din

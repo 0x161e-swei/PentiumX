@@ -1,3 +1,4 @@
+#include "string.h"
 // syscall_code
 #define PRINT_INT 1
 #define PRINT_STRING 4
@@ -86,9 +87,20 @@ void ClearScreen();
 void PrintInt(unsigned int i);
 void SectionWrite(unsigned int section_number);
 
+// void* memcpy(void* dest,const void* src,size_t count)
+// {
+//     unsigned int i;
+//     char* tmp=dest;
+//     const char* s=src;
+//     for(i=0;i<count;i++){
+//     	tmp[i]=s[i];
+// 	}
+//     return dest;
+// }
+
 void Initial()
 {
-	ClearScreen();
+	
 	unsigned int* address;
 	// initial VRAM
 	// address = (unsigned int*)VRAM;
@@ -163,6 +175,8 @@ void Initial()
 
 	cmd_lou = (unsigned int*)CMD_LOU;
 	cmd_lou[0] = 'l'  ; cmd_lou[1] = 'o'  ; cmd_lou[2] = 'u'  ; cmd_lou[3] = '\0'; 
+
+	ClearScreen();
 
 	asm ("addi 	$fp,	$zero,	0xff");
 	asm ("mtc0	$fp,	$11"); 
@@ -463,15 +477,16 @@ void SectionRead(unsigned int section_number)
 	}
 	if (((FileInfo*)FILE_INFO)->is_valid == 1)
 		SectionWrite(((FileInfo*)FILE_INFO)->current_sector);
+		Sleep(1000000);
 
 
 	asm ("add $a0, $zero, %0"::"r"(section_number));
 	asm ("add $v0, $zero, 14");
 	asm ("syscall");
-	PrintChar('a', 0x400);
-	PrintInt(section_number);
-	PrintChar('a', 0x400);
-	PrintChar(ENTER, 0x700);
+	// PrintChar('a', 0x400);
+	// PrintInt(section_number);
+	// PrintChar('a', 0x400);
+	// PrintChar(ENTER, 0x700);
 	// asm ("lw $ra, 0($sp)");
 	// asm ("addiu $sp, $sp, 4");
 }
@@ -532,7 +547,7 @@ void OpenFile(unsigned int* file_name, unsigned int flag, unsigned int mode)
 			//&& (file_info->current_sector == CATALOG_OFFSET+i))){
 			Sleep(100000);
 			// PrintInt(file_info->is_valid);
-		};
+		}
 		item = (CatalogItem*)FILE_BUFFER;
 		for (j=0; j<16; j++) {
 			CharToInt((unsigned int*)item, item_name, 8);
@@ -566,6 +581,13 @@ open_find:
 		Sleep(100000);
 			// PrintInt(((FileInfo*)FILE_INFO)->is_valid);
 	}
+	// asm ("syscall");asm ("syscall");asm ("syscall");
+	// for (i=0; i<512; i+=2) {
+	// 	PrintInt(*(unsigned short*)(FILE_BUFFER+i));
+	// 	// PrintInt(*(unsigned int*)(FILE_BUFFER+i));
+	// 	// asm ("syscall");asm ("syscall");asm ("syscall");
+	// }
+	// asm ("syscall");asm ("syscall");asm ("syscall");
 }
 
 // length must less than 512
@@ -613,21 +635,7 @@ open_find:
 //	}
 //}
 
-//void ClearScreen()
-//{
-//	char* VRAM = (char*)VRAM;
-//	unsigned int i, j;
-//	
-//	*char_device = 0;
-//	*(char_device+1) = 0;
-//	for (i=0; i<TEXT_HEIGHT; i++) {
-//		for (j=0; j<TEXT_WIDTH; j++) {
-//			PrintChar(20);
-//		}
-//	}
-//	*char_device = 0;
-//	*(char_device+1) = 0;
-//}
+
 
 void Dir()
 {
@@ -640,23 +648,20 @@ void Dir()
 	// search in catalog
 	for (i=0; i<32; i++) {
 		SectionRead(CATALOG_OFFSET+i);
-		// asm("syscall");
-		// 		asm("syscall");
-		// 				asm("syscall");
-		// 						asm("syscall");
+
 		// PrintInt(CATALOG_OFFSET+i);
 		// TODO: DEBUG
 		// PrintChar('h', 0x100);
+		// asm ("syscall");asm ("syscall");asm ("syscall");
 		// PrintInt(((FileInfo*)FILE_INFO)->is_valid);
-		// PrintChar('h', 0x100);
-		PrintInt(((FileInfo*)FILE_INFO)->is_valid);
-		while(!((((FileInfo*)FILE_INFO)->is_valid == 1) 
-			&& (((FileInfo*)FILE_INFO)->current_sector == CATALOG_OFFSET+i))){
+		// asm ("syscall");asm ("syscall");asm ("syscall");
+		while(!(((FileInfo*)FILE_INFO)->is_valid == 1)) {
+			//&& (((FileInfo*)FILE_INFO)->current_sector == CATALOG_OFFSET+i))){
 			Sleep(1000000);
-			PrintInt(((FileInfo*)FILE_INFO)->is_valid);
 			// PrintInt(((FileInfo*)FILE_INFO)->is_valid);
-		};
-		// asm("syscall");		asm("syscall");		asm("syscall");		
+			// asm ("syscall");asm ("syscall");asm ("syscall");
+		}
+		
 		item = (CatalogItem*)FILE_BUFFER;
 
 		for (j=0; j<16; j++) {
@@ -680,7 +685,7 @@ void Type(unsigned int* argv[])
 	unsigned int i, j;
 	char* file = (char*)FILE_BUFFER;
 	unsigned int sum_sectors;
-	unsigned short fat_sector, next_sector;
+	unsigned short fat_sector, next_sector,	file_sector;
 	unsigned int offset;
 	unsigned int c;
 
@@ -710,29 +715,34 @@ void Type(unsigned int* argv[])
 				PrintChar(c>>24, 0x700);
 				//PrintChar(*(unsigned int*)(file+(j>>2)), 0x700);
 			}
-
-			asm ("srl %0, %1, 8":"=r"(fat_sector):"r"(2+((FileInfo*)FILE_INFO)->current_sector-DATA_OFFSET));
+			
+			file_sector = ((FileInfo*)FILE_INFO)->current_sector-DATA_OFFSET+2;
+			asm ("srl %0, %1, 8":"=r"(fat_sector):"r"(file_sector));
 			//fat_sector = (2+((FileInfo*)FILE_INFO)->current_sector-DATA_OFFSET) >> 8; // divide by 256
 
 			// read FAT
 			SectionRead(fat_sector+1);
-			while(!((((FileInfo*)FILE_INFO)->is_valid == 1) 
-			&& (((FileInfo*)FILE_INFO)->current_sector == fat_sector+1))){
+			while(!((((FileInfo*)FILE_INFO)->is_valid == 1))) { 
+			// && (((FileInfo*)FILE_INFO)->current_sector == fat_sector+1))){
 				Sleep(100000);
 				// PrintInt(((FileInfo*)FILE_INFO)->is_valid);
-			};
+			}
 
-			asm ("andi $fp, %0, 0xff"::"r"(((FileInfo*)FILE_INFO)->current_sector+2-DATA_OFFSET));
-			asm ("sll %0, $fp, 1":"=r"(offset));
-			next_sector = *(unsigned short*)(file+offset);
+			offset = Mod(file_sector, 256);
+			// asm ("andi $gp, %0, 0xff"::"r"(file_sector));
+			// asm ("sll %0, $gp, 1":"=r"(offset));
+			// PrintInt(file_sector);
+			// PrintInt(offset);
+			next_sector = *((unsigned short*)(file)+offset);
+			// PrintInt(next_sector);
 			//next_sector = *(unsigned short*)(file+((((FileInfo*)FILE_INFO)->current_sector&0xff)<<1));
 			// read file
 			SectionRead(DATA_OFFSET+next_sector-2);
-			while(!((((FileInfo*)FILE_INFO)->is_valid == 1) 
-			&& (((FileInfo*)FILE_INFO)->current_sector == DATA_OFFSET+next_sector-2))){
+			while(!((((FileInfo*)FILE_INFO)->is_valid == 1))) {
+			//&& (((FileInfo*)FILE_INFO)->current_sector == DATA_OFFSET+next_sector-2))){
 				Sleep(100000);
 				// PrintInt(((FileInfo*)FILE_INFO)->is_valid);
-			};
+			}
 
 			((FileInfo*)FILE_INFO)->read_write_head = 0;
 		}
@@ -755,11 +765,11 @@ void Rename(unsigned int* argv[])
 	// search in catalog
 	for (i=0; i<32; i++) {
 		SectionRead(CATALOG_OFFSET+i);
-		while(!((((FileInfo*)FILE_INFO)->is_valid == 1) 
-			&& (((FileInfo*)FILE_INFO)->current_sector == CATALOG_OFFSET+i))){
+		while(!((((FileInfo*)FILE_INFO)->is_valid == 1))) {
+			//&& (((FileInfo*)FILE_INFO)->current_sector == CATALOG_OFFSET+i))){
 				Sleep(100000);
 				// PrintInt(((FileInfo*)FILE_INFO)->is_valid);
-		};
+		}
 		item = (CatalogItem*)FILE_BUFFER;
 		for (j=0; j<16; j++) {
 			CharToInt((unsigned int*)item, item_name, 8);
@@ -775,6 +785,7 @@ void Rename(unsigned int* argv[])
 				*((unsigned int*)item+2) = new_item_extension[0];
 
 				SectionWrite(CATALOG_OFFSET+i);
+				Sleep(1000000);
 				return;
 			}
 			else {
@@ -807,43 +818,53 @@ void Touch(unsigned int* argv[])
 	empty[0] = '\0';
 
 	SplitName(argv[1], name, extension);
-	PrintString(name, 0x700);
-	PrintString(extension, 0x700);
+
 	// read FAT
 	for (i=0; i<79; i++) {
-		SectionRead(1+i);
-		PrintInt(1+i);
-		PrintInt(((FileInfo*)FILE_INFO)->is_valid);
+		SectionRead(1 + i);
+		// PrintInt(((FileInfo*)FILE_INFO)->is_valid);
 		while(((FileInfo*)FILE_INFO)->is_valid == 0) {
 			//&& (((FileInfo*)FILE_INFO)->current_sector == 1+i))){
 				Sleep(100000);
-				PrintInt(((FileInfo*)FILE_INFO)->is_valid);
-		};
+				// PrintInt(((FileInfo*)FILE_INFO)->is_valid);
+		}
 		for (j=0; j<512; j+=2) {
 			sector_number = *(unsigned short*)(file+j);
-			PrintChar('j', 0x400);
-			PrintInt(sector_number);
+			// PrintChar('j', 0x400);
+			// PrintInt(sector_number);
 			if (sector_number == 0) {
 				*(unsigned short*)(file+j) = 0xffff;
 				sector_number = (i<<8) + (j>>1);
 				// write 2 FAT
+				// SectionRead(1 + i);
+				// while (!(((FileInfo*)FILE_INFO)->is_valid == 1)
+				// 	&& (((FileInfo*)FILE_INFO)->current_sector == 1 + i))	{
+				// 	Sleep(10000);
+				// }
 				SectionWrite(1+i);
 				Sleep(1000000);
-				SectionWrite(80+i);
+				// SectionRead(80 + i);
+				// while (!(((FileInfo*)FILE_INFO)->is_valid == 1) 
+				// 	&& (((FileInfo*)FILE_INFO)->current_sector == 80 + i))	{
+				// 	Sleep(10000);
+				// }
+				// SectionWrite(80+i);
+				// Sleep(10000);
 				goto out;
 			}
 		}
 	}
+	PrintString((unsigned int*)ERROR, 0x400);
+	return ;
 out:
 	// search in catalog
 	for (i=0; i<32; i++) {
-		PrintInt(i);
 		SectionRead(CATALOG_OFFSET+i);
 		while(((FileInfo*)FILE_INFO)->is_valid == 0){ 
 			//&& (((FileInfo*)FILE_INFO)->current_sector == CATALOG_OFFSET+i))){
 				Sleep(100000);
 				// PrintInt(((FileInfo*)FILE_INFO)->is_valid);
-		};
+		}
 		item = (CatalogItem*)FILE_BUFFER;
 		for (j=0; j<16; j++) {
 
@@ -852,18 +873,20 @@ out:
 				IntToChar(name, new_item_name, 8);
 				IntToChar(extension, new_item_extension, 3);
 
-				PrintInt(new_item_name[0]);
-				PrintInt(new_item_name[1]);
-				PrintInt(new_item_extension[0]);
-
 				*(unsigned int*)item = new_item_name[0];
 				*((unsigned int*)item+1) = new_item_name[1];
 				*((unsigned int*)item+2) = new_item_extension[0];
 				
 				item->size = 0;
 				item->starting_sector = sector_number;
-				SectionWrite(CATALOG_OFFSET+i);
 
+				// SectionRead(CATALOG_OFFSET+i);
+				// while (!(((FileInfo*)FILE_INFO)->is_valid == 1)
+				// 	&& (((FileInfo*)FILE_INFO)->current_sector == CATALOG_OFFSET+i))	{
+				// 	Sleep(10000);
+				// }
+				SectionWrite(CATALOG_OFFSET+i);
+				Sleep(1000000);
 				return;
 			}
 			else {
@@ -879,19 +902,19 @@ void Del(unsigned int* argv[])
 	unsigned int name[9], extension[4];
 	unsigned int item_name[9], item_extension[4];
 	unsigned int i,j, offset;
-	unsigned short next_sector, file_sector;
+	unsigned short next_sector, fat_sector;
 	char* file = (char*)FILE_BUFFER;
 
 	SplitName(argv[1], name, extension);
 	// search in catalog
 	for (i=0; i<32; i++) {
 		SectionRead(CATALOG_OFFSET+i);
-		PrintInt(((FileInfo*)FILE_INFO)->is_valid);
-		while(!((((FileInfo*)FILE_INFO)->is_valid == 1) 
-			&& (((FileInfo*)FILE_INFO)->current_sector == CATALOG_OFFSET+i))){
+		// PrintInt(((FileInfo*)FILE_INFO)->is_valid);
+		while(!(((FileInfo*)FILE_INFO)->is_valid == 1)) {
+			// && (((FileInfo*)FILE_INFO)->current_sector == CATALOG_OFFSET+i))){
 				Sleep(100000);
-				PrintInt(((FileInfo*)FILE_INFO)->is_valid);
-		};
+				// PrintInt(((FileInfo*)FILE_INFO)->is_valid);
+		}
 		item = (CatalogItem*)FILE_BUFFER;
 		for (j=0; j<16; j++) {
 			CharToInt((unsigned int*)item, item_name, 8);
@@ -905,7 +928,9 @@ void Del(unsigned int* argv[])
 
 				item->size = 0;
 				// ((FileInfo*)FILE_INFO)->current_sector = item->starting_sector;
+				next_sector = item->starting_sector-2+DATA_OFFSET;
 				SectionWrite(CATALOG_OFFSET+i);
+				Sleep(1000000);
 				goto clear;
 			}
 			else {
@@ -924,28 +949,37 @@ void Del(unsigned int* argv[])
 	}
 	// clear FAT
 clear:
-	do {
-		file_sector = item->starting_sector-2+DATA_OFFSET;
-		asm ("srl $fp, %0, 8"::"r"(file_sector));
-		asm ("addi %0, $fp, 1":"=r"(next_sector));
-		SectionRead(next_sector);
+	do {	
+		fat_sector = Divide(next_sector, 256);
+		// asm ("srl $fp, %0, 8"::"r"(file_sector));
+		// asm ("addi %0, $fp, 1":"=r"(next_sector));
+		SectionRead(fat_sector+1);
 		//SectionRead(1+(((FileInfo*)FILE_INFO)->current_sector>>8));
 		while(((FileInfo*)FILE_INFO)->is_valid == 0) { 
 			//&& (((FileInfo*)FILE_INFO)->current_sector == 1+(((FileInfo*)FILE_INFO)->current_sector>>8)))){
 				Sleep(100000);
 				// PrintInt(((FileInfo*)FILE_INFO)->is_valid);
-		};
+		}
 
-		asm ("andi $fp, %0, 0xff"::"r"(file_sector));
-		asm ("sll %0, $fp, 1":"=r"(offset));
-
-		next_sector = *(unsigned short*)(file+offset);
-		*(unsigned short*)(file+offset) = 0;
+		// asm ("andi $fp, %0, 0xff"::"r"(file_sector));
+		// asm ("sll %0, $fp, 1":"=r"(offset));
+		offset = Mod(next_sector, 256);
+		if ((offset & 1) == 0) {
+			next_sector = *((unsigned short*)(file)+offset);
+			*((unsigned short*)(file)+offset) = 0;
+		}
+		else {
+			next_sector = (*(unsigned int*)(FILE_BUFFER+(offset>>1)))>>16;
+			(*(unsigned int*)(FILE_BUFFER+(offset>>1))) &= 0xffff;
+		}
+	
 		//next_sector = *(unsigned short*)(file+((((FileInfo*)FILE_INFO)->current_sector&0xff)<<1));
 		//*(unsigned short*)(file+((((FileInfo*)FILE_INFO)->current_sector&0xff)<<1)) = 0;
 
 		SectionWrite(((FileInfo*)FILE_INFO)->current_sector);
-		SectionWrite(((FileInfo*)FILE_INFO)->current_sector+79);
+		Sleep(1000000);
+		// SectionWrite(((FileInfo*)FILE_INFO)->current_sector+79);
+		// Sleep(10000);
 
 		// SectionWrite(1+(((FileInfo*)FILE_INFO)->current_sector>>8));
 		// SectionWrite(80+(((FileInfo*)FILE_INFO)->current_sector>>8));
@@ -975,6 +1009,11 @@ clear:
 //	}
 //}
 //
+void Exec(unsigned int* argv[])
+{
+	OpenFile(argv[1], 0, 0);
+	asm ("jal 31240");
+}
 //BOOL CheckWin(char current)
 //{
 //	char* char_device = (char*)VRAM;
@@ -1330,9 +1369,9 @@ void Execute(unsigned int argc, unsigned int* argv[])
 	else if (Strcmp(argv[0], cmd_clr, 4) == TRUE) {
 		ClearScreen();
 	}
-//	else if (Strcmp(argv[0], cmd_exec, 5) == TRUE) {
-//		Exec(argv);
-//	}
+	else if (Strcmp(argv[0], (unsigned int*)CMD_EXEC, 5) == TRUE) {
+		Exec(argv);
+	}
 //	else if (Strcmp(argv[0], cmd_exit, 5) == TRUE) {
 //		Exit();
 //	}
@@ -1355,6 +1394,10 @@ int main()
 	unsigned int i;
 	unsigned int argc;
 	unsigned int* argv[3];
+
+	*(unsigned short*)&argc = 0xabcd;
+	*((unsigned short*)&argc+1) = 0x1122;
+
 	
 	Initial();
 	

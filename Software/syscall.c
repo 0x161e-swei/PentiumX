@@ -405,7 +405,8 @@ void sys_Sendblock(unsigned int block)
 			shift_number--;
 		}
 		//aword= *(unsigned int* )(FILE_BUFFER+WOffset)>>((3-BOffset)<<3);
-		*(unsigned int *)COMADR = aword;
+		*com = aword & 0xff;
+		// *(unsigned int *)COMADR = aword;
 		//Sendchar(aword);
 		//BlockOffset++;
 	}
@@ -563,6 +564,7 @@ void Uart()
 		// *(vram + 0x244 + i) = *(unsigned int*)(FILE_BUFFER+WOffset);
 	} 
 	// *(vram + 0x210 + i) = 0x461;
+	((FileInfo*)FILE_INFO)->is_valid = 1;
 
 
 
