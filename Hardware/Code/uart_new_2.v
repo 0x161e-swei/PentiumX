@@ -71,6 +71,7 @@ reg fifo_busy;
 wire uart_wr;
 reg empty_after_ack = 0;
 reg fifo_rx_rd2 = 0;
+reg valid = 1;
 
 uart_transceiver transceiver(
 	.sys_clk(sys_clk),
@@ -157,7 +158,7 @@ uart_fifo_tx fifo_tx (
   .clk(sys_clk), // input clk
   .rst(sys_rst), // input rst
   .din(tx_data), // input [7 : 0] din
-  .wr_en(tx_wr & ~fifo_busy), // input wr_en
+  .wr_en(tx_wr & ~fifo_busy & valid), // input wr_en
   .rd_en(fifo_tx_rd_once/*fifo_tx_rd*/), // input rd_en
   .dout(tx_data_out), // output [7 : 0] dout
   .full(full_tx), // output full
@@ -178,9 +179,11 @@ assign rx_wr = stb_i & ack_o & ~we_i & (adr_i[1:0] == 2'b00) & ~empty_after_ack;
 
 parameter default_divisor = clk_freq/baud/16;
 
-assign ack_o = stb_i & (we_i?~full_tx:1) ;//& ((we_i&~full_tx) | (~we_i&~empty_rx));
 
-assign uart_wr = stb_i && ack_o;
+assign ack_o = stb_i & (we_i?(~full_tx|~valid):1) ;//& ((we_i&~full_tx) | (~we_i&~empty_rx));
+
+assign uart_wr = stb_i & ack_o;
+
 
 always @(negedge ack_o) begin
 	if(empty_rx) empty_after_ack = 1;
@@ -191,6 +194,7 @@ always @(posedge sys_clk or posedge sys_rst) begin
 	if(sys_rst) begin
 		divisor <= default_divisor;
 		dat_o <= 32'd0;
+		valid = 1;
 	end else if(uart_wr) begin
 		dat_o <= 32'd0;
 		case(adr_i[1:0])
@@ -204,8 +208,10 @@ always @(posedge sys_clk or posedge sys_rst) begin
 				2'b01: divisor <= dat_i[15:0];
 				2'b10: thru <= dat_i[0];
 			endcase
+			valid = 0;
 		end
 	end
+	else valid = 1;
 end
 
 //always @(posedge sys_clk) begin

@@ -4,6 +4,7 @@
 *.elf
 *.bin
 *.zip
+*.rar
 Software/Virtual*
 
 

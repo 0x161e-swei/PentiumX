@@ -50,7 +50,8 @@ module 		ctrl(
 				WriteCp0, 
 				sysCause,
                 WriteIen,
-                Int_en
+                Int_en,
+				sel_o
 				);
 
 
@@ -67,6 +68,7 @@ module 		ctrl(
 	output reg 	[ 3: 0]	ALU_operation = 0;
 	output wire [ 4: 0]	state_out;
 	output reg 		    Iack;
+	output reg	[ 3: 0]	sel_o;
 
 	reg [4:0] state = 5'b00000;
 
@@ -104,6 +106,7 @@ module 		ctrl(
 		WriteCause 			= 0;
 		WriteCp0 			= 0;
 		sysCause 			= 0;
+		sel_o				= 4'b1111;
 	end
 
 	always @ (posedge clk or posedge reset)
@@ -118,6 +121,7 @@ module 		ctrl(
 			ALUSrcA[1] 						<= 0;
 			PCSource[2] 					<= 0;
 			MemtoReg[2] 					<= 0;
+			sel_o							<= 4'b1111;;
 			state 							<= IF;
 		end	
 		else begin	
@@ -133,6 +137,7 @@ module 		ctrl(
 			PCSource[2] 					<= 0;
 			MemtoReg[2] 					<= 0;
 			`CPU_ctrl_signals 				<= 17'h12821;
+			sel_o							<= 4'b1111;
 			case (state)			
 			IF: begin	
 				if(MIO_ready)begin	
@@ -414,21 +419,27 @@ module 		ctrl(
 			EX_Mem:begin
 				if(Inst[31:26] == 6'b100011)begin 									// Lw
 					`CPU_ctrl_signals	<= 17'h06051; 
+					//sel_o				<= 4'b1111;
 					state 				<= MEM_RD; 
 				end
 				else if(Inst[31:26] == 6'b100001)begin 								// Lh
 					`CPU_ctrl_signals	<= 17'h06051; 
-					state 				<= MEM_RD_LH; 
+					sel_o				<= 4'b0011;
+					state 				<= MEM_RD; 
 				end
 				else if(Inst[31:26] == 6'b100101)begin 								// Lhu
 					`CPU_ctrl_signals	<= 17'h06051; 
-					state 				<= MEM_RD_LHU; 
+					sel_o				<= 4'b0011;
+					Signext				<= 1;
+					state 				<= MEM_RD; 
 				end
 				else if(Inst[31:26] == 6'b101001)begin 								// Sh
-					`CPU_ctrl_signals 	<= 17'h06051; 
-					state 				<= MEM_RD_SH; 
+					//`CPU_ctrl_signals 	<= 17'h06051; 
+					`CPU_ctrl_signals 	<=17'h05051; 
+					sel_o				<= 4'b0011;
+					state 				<= MEM_WD; 
 				end
-				else if(Inst[31:26] == 6'b101011)begin
+				else if(Inst[31:26] == 6'b101011)begin								// Sw
 					`CPU_ctrl_signals 	<=17'h05051; 
 					state 				<= MEM_WD; 
 					end
@@ -476,6 +487,8 @@ module 		ctrl(
 			MEM_RD: begin
 				if(MIO_ready)begin
 					`CPU_ctrl_signals<= 17'h00208; 
+					sel_o			<= 4'b1111;
+					Signext			<= 0;
 					state 			<= WB_LW; 
 				end
 				else begin
@@ -542,7 +555,8 @@ module 		ctrl(
 			MEM_WD: begin
 				if(MIO_ready)begin
 					`CPU_ctrl_signals<= 17'h12821;
-					data2Mem 		<= 0;
+					//data2Mem 		<= 0;
+					sel_o			<= 4'b1111;
 					ALU_operation 	<= ADD;
 					state 			<= IF; 
 				end
