@@ -632,7 +632,7 @@ void Ps2()
 	*(kb_buffer) &= 0xffff0000;
 	*(kb_buffer) += end;
 
-ps2_rtn:
+	ps2_rtn:
 	asm ("lw $a0, 0($sp)");
 	asm ("lw $a1, 4($sp)");
 	asm ("lw $v0, 8($sp)");
