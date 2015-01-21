@@ -62,7 +62,7 @@ reg fifo_rd_once = 0;
 wire [7:0] tx_data_out;
 wire 	fifo_tx_rd;
 reg		tran_tx_wr = 0;
-reg fifo_tx_rd_once = 0;
+
 reg fifo_busy;
 
 wire uart_wr;
@@ -80,7 +80,7 @@ uart_transceiver transceiver(
 	.rx_done(rx_done),
 
 	.tx_data(tx_data_out),
-	.tx_wr(tran_tx_wr & fifo_tx_rd_once),
+	.tx_wr(tran_tx_wr),
 	.tx_done(tx_done),
 	.tx_busy(tx_busy),
 	.rx_busy(rx_busy)
@@ -126,11 +126,6 @@ uart_fifo fifo_rx (
 );
 
 
-always @(posedge sys_clk) begin
-	if(tran_tx_wr) fifo_tx_rd_once = 1;
-	else fifo_tx_rd_once = 0;
-end
-
 assign fifo_tx_rd = ~tx_busy & ~empty_tx;
 always @(posedge sys_clk) begin 
 	tran_tx_wr = fifo_tx_rd;
@@ -144,13 +139,12 @@ end
 //assign tx_irq = full_tx;
 
 
-
 uart_fifo fifo_tx (
   .clk(sys_clk), // input clk
   .rst(sys_rst), // input rst
   .din(tx_data), // input [7 : 0] din
   .wr_en(tx_wr & ~fifo_busy), // input wr_en
-  .rd_en(tran_tx_wr & fifo_tx_rd_once/*fifo_tx_rd*/), // input rd_en
+  .rd_en(tran_tx_wr & tx_done/*fifo_tx_rd*/), // input rd_en
   .dout(tx_data_out), // output [7 : 0] dout
   .full(full_tx), // output full
   .empty(empty_tx), // output empty

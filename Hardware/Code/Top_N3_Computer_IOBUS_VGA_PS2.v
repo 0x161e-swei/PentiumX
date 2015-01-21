@@ -235,6 +235,8 @@ module Top_N3_Computer_IOBUS_VGA_PS2(
 					//.mem_w            (mem_w),
                     .mem_w              (m0_we_i),
                     .cpu_stb_o          (m0_stb_i),
+					// 
+					.sel_o				(m0_sel_i),
 					//.Addr_out         (cpu_addr),
                     .Addr_out           (m0_adr_i),
 					//.data_out         (Cpu_data2bus),
@@ -246,6 +248,8 @@ module Top_N3_Computer_IOBUS_VGA_PS2(
                     .gntInt				(gntInt),
                     .Iack 				(Iack),
                     .intrrupt_en_o		(intrrupt_en),
+//                    .Half_W				(Half_W),
+                    .Signext			(Signext),
 
 					.CPU_MIO            (CPU_MIO), 			// not in use
 					.state              (state) 			// Test
@@ -258,10 +262,12 @@ module Top_N3_Computer_IOBUS_VGA_PS2(
 					.adr_i				(s2_adr_o), 
 					.we_i				(s2_we_o),
 					.stb_i				(s2_stb_o),
+					.sel_i				(s2_sel_o),
 					//wb_output
 					.dat_o				(s2_dat_i), 				
 					.ack_o				(s2_ack_i),
-
+					//.Half_W				(Half_W),
+					.Signext			(Signext),
                     .clk                (clk_m)
 			        // .W_En               (data_ram_we),
 			        // .Addr               (ram_addr),

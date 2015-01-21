@@ -34,7 +34,10 @@ module Muliti_cycle_Cpu(
 						CPU_MIO,
 						state,
                         cpu_stb_o,
-                        intrrupt_en_o
+                        intrrupt_en_o,
+						sel_o,
+//                        Half_W,
+                        Signext
 						);
 
 	input wire 			clk, reset, MIO_ready;
@@ -45,10 +48,12 @@ module Muliti_cycle_Cpu(
     output wire [31: 0] pc_out, Inst;	//test
 	output wire [31: 0] Addr_out, data_out;						
 	output wire [ 4: 0] state;
-	output wire 		mem_w, CPU_MIO;	
+	output wire 		mem_w, CPU_MIO;
+	output wire 		Signext;	
     output wire         cpu_stb_o, Iack;	// Bus requset and 
     output wire [31: 0] intrrupt_en_o;		// Interrupt acknowlegement
-    									
+	output wire [3: 0] sel_o;
+    										
 
 	wire 		[31: 0] PC_Current;
 	wire 		[15: 0] imm;
@@ -59,7 +64,7 @@ module Muliti_cycle_Cpu(
 	wire 		[ 2: 0] PCSource;
 	wire 				MemRead, MemWrite, IorD, IRWrite, RegWrite, 
 						PCWrite, PCWriteCond, Beq, data2Mem, zero, 
-						overflow, Signext, WriteEPC, WriteCause, 
+						overflow, /*Signext,*/ WriteEPC, WriteCause, 
 						WriteCp0, sysCause, WriteInt, Int_enm;	
 	reg 		[ 3: 0]	gntIntOut;		
 
@@ -97,7 +102,9 @@ module Muliti_cycle_Cpu(
 					.WriteCp0			(WriteCp0), 
 					.sysCause			(sysCause),
 					.WriteIen 			(WriteIen),
-					.Int_en 			(Int_en)
+					.Int_en 			(Int_en),
+					.sel_o				(sel_o)
+					//.Half_W				(Half_W)
  					);
 
  		assign InTcause		= {gntIntOut, sysCause};				// TODO: to be precise
