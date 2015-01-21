@@ -17,6 +17,7 @@ int main()
 
 	asm ("lw $ra, 0($sp)");
 	asm ("addiu $sp, $sp, 4");
+	asm ("addiu $sp, $sp, 40");
 	asm ("jr $ra");
 }
 
