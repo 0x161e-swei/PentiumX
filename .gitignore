@@ -1,3 +1,4 @@
+
 *.o
 *.txt
 *.exe
@@ -54,3 +55,43 @@ Temporary Items
 
 
 Hardware/PentiumX_OnSoC/
+
+#Visual Studio files
+/Debug
+/Release
+*.log
+*.tlog
+*.idb
+*.pdb
+*.suo
+*.lastbuildstate
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+*.txt
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
